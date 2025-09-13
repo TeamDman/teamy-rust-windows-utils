@@ -1,0 +1,33 @@
+use eyre::Context;
+use windows::Win32::Storage::FileSystem::CreateFileW;
+use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_NORMAL;
+use windows::Win32::Storage::FileSystem::FILE_GENERIC_READ;
+use windows::Win32::Storage::FileSystem::FILE_SHARE_DELETE;
+use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
+use windows::Win32::Storage::FileSystem::FILE_SHARE_WRITE;
+use windows::Win32::Storage::FileSystem::OPEN_EXISTING;
+
+use crate::handle::auto_closing_handle::AutoClosingHandle;
+use crate::string::EasyPCWSTR;
+
+pub fn get_read_only_drive_handle(drive_letter: char) -> eyre::Result<AutoClosingHandle> {
+    let drive_path = format!("\\\\.\\{drive_letter}:");
+    let handle = unsafe {
+        CreateFileW(
+            drive_path.easy_pcwstr()?.as_ref(),
+            FILE_GENERIC_READ.0,
+            windows::Win32::Storage::FileSystem::FILE_SHARE_MODE(
+                FILE_SHARE_READ.0 | FILE_SHARE_WRITE.0 | FILE_SHARE_DELETE.0,
+            ),
+            None,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            None,
+        )
+        .wrap_err(format!(
+            "Failed to open volume handle for {drive_letter:?}, did you forget to elevate?"
+        ))?
+    };
+
+    Ok(AutoClosingHandle::new(handle))
+}

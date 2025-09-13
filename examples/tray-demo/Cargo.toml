@@ -1,0 +1,19 @@
+[package]
+name = "tray-demo"
+authors.workspace=true
+repository.workspace=true
+version.workspace=true
+license.workspace=true
+edition.workspace=true
+
+[dependencies]
+teamy-rust-windows-utils = { path = "../../" }
+windows.workspace = true
+eyre.workspace=true
+color-eyre.workspace=true
+tracing.workspace=true
+tracing-subscriber.workspace=true
+bevy_log.workspace=true
+
+[build-dependencies]
+embed-resource = "3.0.3"

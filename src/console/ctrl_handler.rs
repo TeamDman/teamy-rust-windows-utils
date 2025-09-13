@@ -1,0 +1,44 @@
+use std::sync::atomic::Ordering;
+use std::sync::atomic::AtomicUsize;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use windows::Win32::Foundation::*;
+use windows::Win32::System::Console::*;
+use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::core::BOOL;
+
+static OUR_HWND: AtomicUsize = AtomicUsize::new(0);
+
+pub fn set_our_hwnd(hwnd: HWND) {
+    debug!("Writing global HWND: {:?}", hwnd);
+    OUR_HWND.store(hwnd.0 as usize, Ordering::SeqCst);
+}
+
+pub unsafe extern "system" fn ctrl_handler(ctrl_type: u32) -> BOOL {
+    match ctrl_type {
+        CTRL_C_EVENT | CTRL_BREAK_EVENT | CTRL_CLOSE_EVENT | CTRL_LOGOFF_EVENT
+        | CTRL_SHUTDOWN_EVENT => {
+            info!("Received shutdown signal, cleaning up...");
+            let hwnd_val = OUR_HWND.load(Ordering::SeqCst);
+            if hwnd_val != 0 {
+                let hwnd = HWND(hwnd_val as *mut _);
+                // SendMessageW will synchronously pump the message and wait for it to finish
+                let _result = unsafe { SendMessageW(hwnd, WM_CLOSE, None, None) };
+                TRUE
+            } else {
+                error!("No window handle available for cleanup");
+                FALSE
+            }
+        }
+        _ => FALSE,
+    }
+}
+
+pub fn attach_ctrl_handler() -> windows::core::Result<()> {
+    debug!("Attaching console ctrl handler");
+    unsafe {
+        SetConsoleCtrlHandler(Some(ctrl_handler), true)?;
+    }
+    Ok(())
+}
