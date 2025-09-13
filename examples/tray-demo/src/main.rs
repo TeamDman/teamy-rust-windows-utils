@@ -1,4 +1,5 @@
 pub mod window_proc;
+use crate::window_proc::window_proc;
 use teamy_rust_windows_utils::console::attach_ctrl_handler;
 use teamy_rust_windows_utils::event_loop::run_message_loop;
 use teamy_rust_windows_utils::hicon::application_icon::get_application_icon;
@@ -41,7 +42,7 @@ pub fn main() -> eyre::Result<()> {
 
     info!("Hello, world!");
 
-    let window = create_window_for_tray(Some(window_proc::window_proc))?;
+    let window = create_window_for_tray(Some(window_proc))?;
 
     attach_ctrl_handler()?;
 
