@@ -1,4 +1,6 @@
 use teamy_rust_windows_utils::tray::delete_tray_icon;
+use teamy_rust_windows_utils::tray::get_or_register_taskbar_created_message;
+use teamy_rust_windows_utils::tray::re_add_tray_icon;
 use tracing::error;
 use tracing::instrument;
 use windows::Win32::Foundation::LPARAM;
@@ -17,7 +19,16 @@ pub unsafe extern "system" fn window_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    // Cache the broadcast message atom once per process; cheap on subsequent calls.
+    // If you prefer, this can be hoisted into a static in this module too.
     match message {
+        m if m == get_or_register_taskbar_created_message() => {
+            // Explorer/taskbar restarted; re-add our tray icon
+            if let Err(e) = re_add_tray_icon() {
+                error!("Failed to re-add tray icon after TaskbarCreated: {}", e);
+            }
+            LRESULT(0)
+        }
         WM_CLOSE => {
             // Clean up the tray icon before closing
             if let Err(e) = delete_tray_icon(hwnd) {
