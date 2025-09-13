@@ -1,12 +1,9 @@
 pub mod window_proc;
-pub mod window_user_data;
-
-use crate::window_user_data::MyWindowUserData;
 use teamy_rust_windows_utils::console::attach_ctrl_handler;
 use teamy_rust_windows_utils::event_loop::run_message_loop;
 use teamy_rust_windows_utils::hicon::application_icon::get_application_icon;
 use teamy_rust_windows_utils::hicon::get_icon_from_current_module;
-use teamy_rust_windows_utils::tray::create_tray;
+use teamy_rust_windows_utils::tray::add_tray_icon;
 use teamy_rust_windows_utils::window::create_window_for_tray;
 use tracing::info;
 use tracing::level_filters::LevelFilter;
@@ -44,8 +41,7 @@ pub fn main() -> eyre::Result<()> {
 
     info!("Hello, world!");
 
-
-    let window = create_window_for_tray(Some(window_proc::window_proc::<MyWindowUserData>))?;
+    let window = create_window_for_tray(Some(window_proc::window_proc))?;
 
     attach_ctrl_handler()?;
 
@@ -55,7 +51,7 @@ pub fn main() -> eyre::Result<()> {
     })?;
     let tooltip = w!("Demo Tray");
 
-    create_tray::<MyWindowUserData>(window, icon, tooltip)?;
+    add_tray_icon(window, icon, tooltip)?;
 
     run_message_loop()?;
 

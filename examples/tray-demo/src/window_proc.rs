@@ -1,41 +1,49 @@
+use teamy_rust_windows_utils::console::get_our_hwnd;
+use teamy_rust_windows_utils::tray::delete_tray_icon;
 use teamy_rust_windows_utils::window::WindowUserData;
-use teamy_rust_windows_utils::window::get_window_user_data;
-use teamy_rust_windows_utils::window::set_window_user_data;
+use teamy_rust_windows_utils::window::clear_window_user_data;
 use tracing::debug;
+use tracing::error;
 use tracing::instrument;
 use tracing::warn;
+use windows::Win32::Foundation::LPARAM;
+use windows::Win32::Foundation::WPARAM;
 use windows::Win32::Foundation::*;
+use windows::Win32::UI::WindowsAndMessaging::DestroyWindow;
+use windows::Win32::UI::WindowsAndMessaging::PostQuitMessage;
+use windows::Win32::UI::WindowsAndMessaging::WM_CLOSE;
+use windows::Win32::UI::WindowsAndMessaging::WM_DESTROY;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 #[instrument]
-pub unsafe extern "system" fn window_proc<T: WindowUserData>(
+pub unsafe extern "system" fn window_proc(
     hwnd: HWND,
     message: u32,
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
     match message {
-        WM_CREATE => {
-            // Ensure we have some instance of the user data for  our custom message handling
-            let data = T::new_from_hwnd(hwnd);
-            set_window_user_data(hwnd, data).unwrap_or_else(|e| {
-                warn!("Failed to set initial window user data: {e}");
-            });
-            return LRESULT(0);
+        WM_CLOSE => {
+            let hwnd = get_our_hwnd();
+            // Clean up the tray icon before closing
+            if let Err(e) = delete_tray_icon(hwnd) {
+                error!("Failed to delete tray icon: {}", e);
+            }
+            unsafe { DestroyWindow(hwnd) }.ok();
+            LRESULT(0)
         }
-        _ => match get_window_user_data::<T>(hwnd) {
-            Err(e) => {
-                warn!("No user data present! (error: {e}) Deferring to DefWindowProc",);
-                return unsafe { DefWindowProcW(hwnd, message, wparam, lparam) };
+        WM_DESTROY => {
+            let hwnd = get_our_hwnd();
+            // Clean up the tray icon before quitting
+            if let Err(e) = delete_tray_icon(hwnd) {
+                debug!("Failed to delete tray icon, this always happens :P {}", e);
             }
-            Ok(user_data) => {
-                debug!("Found user data: {:?}", user_data as *const T);
-                if user_data.handle(message, wparam, lparam) {
-                    return LRESULT(0);
-                } else {
-                    return unsafe { DefWindowProcW(hwnd, message, wparam, lparam) };
-                }
-            }
-        },
+            unsafe { PostQuitMessage(0) };
+
+            LRESULT(0)
+        }
+        _ => {
+            return unsafe { DefWindowProcW(hwnd, message, wparam, lparam) };
+        }
     }
 }

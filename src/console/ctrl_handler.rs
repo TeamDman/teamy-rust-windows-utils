@@ -15,6 +15,16 @@ pub fn set_our_hwnd(hwnd: HWND) {
     OUR_HWND.store(hwnd.0 as usize, Ordering::SeqCst);
 }
 
+pub fn get_our_hwnd() -> HWND {
+    let hwnd_val = OUR_HWND.load(Ordering::SeqCst);
+    debug!("Reading global HWND: {:?}", hwnd_val);
+    if hwnd_val == 0 {
+        HWND(0 as *mut _)
+    } else {
+        HWND(hwnd_val as *mut _)
+    }
+}
+
 pub unsafe extern "system" fn ctrl_handler(ctrl_type: u32) -> BOOL {
     match ctrl_type {
         CTRL_C_EVENT | CTRL_BREAK_EVENT | CTRL_CLOSE_EVENT | CTRL_LOGOFF_EVENT

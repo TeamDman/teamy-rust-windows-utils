@@ -1,5 +1,3 @@
-use crate::window::WindowUserData;
-use crate::window::set_window_user_data;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
@@ -8,9 +6,9 @@ use windows::core::Param;
 use windows::core::ParamValue;
 
 const WM_TRAYICON: u32 = WM_USER + 1;
-const ID_TRAYICON: u32 = 1;
+pub const ID_TRAYICON: u32 = 1;
 
-pub fn create_tray<T: WindowUserData>(
+pub fn add_tray_icon(
     hwnd: HWND,
     icon: HICON,
     tooltip: impl Param<PCWSTR>,
@@ -35,10 +33,6 @@ pub fn create_tray<T: WindowUserData>(
 
     // Add the icon to the system tray
     unsafe { Shell_NotifyIconW(NIM_ADD, &notify_icon_data).ok() }?;
-
-    // Update the user data
-    let data = T::new_from_hwnd_and_notify_icon_data(hwnd, notify_icon_data);
-    set_window_user_data(hwnd, data)?;
 
     Ok(notify_icon_data)
 }
