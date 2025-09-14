@@ -1,4 +1,5 @@
 use crate::tray::TRAY_ICON_ID;
+use eyre::Context;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Shell::NIM_DELETE;
 use windows::Win32::UI::Shell::NOTIFYICONDATAW;
@@ -13,7 +14,8 @@ pub fn delete_tray_icon(hwnd: HWND) -> eyre::Result<()> {
     };
 
     // Remove the icon from the system tray
-    unsafe { Shell_NotifyIconW(NIM_DELETE, &notify_icon_data).ok() }?;
+    unsafe { Shell_NotifyIconW(NIM_DELETE, &notify_icon_data).ok() }
+        .wrap_err_with(|| format!("Failed to remove tray icon for {:?}", hwnd))?;
 
     Ok(())
 }

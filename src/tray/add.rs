@@ -1,5 +1,6 @@
-use std::sync::Mutex;
 use core::ffi::c_void;
+use eyre::Context;
+use std::sync::Mutex;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
@@ -45,7 +46,8 @@ pub fn add_tray_icon(
     notify_icon_data.szTip[..tooltip.len()].copy_from_slice(tooltip);
 
     // Add the icon to the system tray
-    unsafe { Shell_NotifyIconW(NIM_ADD, &notify_icon_data).ok() }?;
+    unsafe { Shell_NotifyIconW(NIM_ADD, &notify_icon_data).ok() }
+        .wrap_err("Failed to add tray icon")?;
 
     // Save state for potential re-add after TaskbarCreated
     {
@@ -68,7 +70,7 @@ pub fn re_add_tray_icon() -> eyre::Result<()> {
         (*guard).clone()
     };
     if let Some(state) = saved {
-    let nid = NOTIFYICONDATAW {
+        let nid = NOTIFYICONDATAW {
             cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
             hWnd: HWND(state.hwnd_bits as *mut c_void),
             uID: TRAY_ICON_ID,
@@ -78,7 +80,7 @@ pub fn re_add_tray_icon() -> eyre::Result<()> {
             szTip: state.tip,
             ..Default::default()
         };
-        unsafe { Shell_NotifyIconW(NIM_ADD, &nid).ok() }?;
+        unsafe { Shell_NotifyIconW(NIM_ADD, &nid).ok() }.wrap_err("Failed to re-add tray icon")?;
         Ok(())
     } else {
         Err(eyre::eyre!("No tray state available to re-add icon"))
