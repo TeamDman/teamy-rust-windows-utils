@@ -1,4 +1,6 @@
+use crate::string::EasyPCWSTR;
 use eyre::Context;
+use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Storage::FileSystem::CreateFileW;
 use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_NORMAL;
 use windows::Win32::Storage::FileSystem::FILE_GENERIC_READ;
@@ -6,11 +8,9 @@ use windows::Win32::Storage::FileSystem::FILE_SHARE_DELETE;
 use windows::Win32::Storage::FileSystem::FILE_SHARE_READ;
 use windows::Win32::Storage::FileSystem::FILE_SHARE_WRITE;
 use windows::Win32::Storage::FileSystem::OPEN_EXISTING;
+use windows::core::Owned;
 
-use crate::handle::auto_closing_handle::AutoClosingHandle;
-use crate::string::EasyPCWSTR;
-
-pub fn get_read_only_drive_handle(drive_letter: char) -> eyre::Result<AutoClosingHandle> {
+pub fn get_read_only_drive_handle(drive_letter: char) -> eyre::Result<Owned<HANDLE>> {
     let drive_path = format!("\\\\.\\{drive_letter}:");
     let handle = unsafe {
         CreateFileW(
@@ -29,5 +29,5 @@ pub fn get_read_only_drive_handle(drive_letter: char) -> eyre::Result<AutoClosin
         ))?
     };
 
-    Ok(AutoClosingHandle::new(handle))
+    Ok(unsafe { Owned::new(handle) })
 }

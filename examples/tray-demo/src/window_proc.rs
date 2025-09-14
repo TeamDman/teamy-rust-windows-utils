@@ -1,4 +1,3 @@
-use teamy_rust_windows_utils::tray::TRAY_ICON_ID;
 use teamy_rust_windows_utils::tray::WM_TASKBAR_CREATED;
 use teamy_rust_windows_utils::tray::WM_USER_TRAY_CALLBACK;
 use teamy_rust_windows_utils::tray::delete_tray_icon;

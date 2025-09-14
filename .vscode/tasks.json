@@ -6,7 +6,8 @@
 			"type": "shell",
 			"command": "cargo",
 			"args": [
-				"check"
+				"check",
+				"--workspace"
 			],
 			"problemMatcher": [
 				"$rustc"
