@@ -1,8 +1,12 @@
+use teamy_rust_windows_utils::tray::TRAY_ICON_ID;
+use teamy_rust_windows_utils::tray::WM_TASKBAR_CREATED;
+use teamy_rust_windows_utils::tray::WM_USER_TRAY_CALLBACK;
 use teamy_rust_windows_utils::tray::delete_tray_icon;
-use teamy_rust_windows_utils::tray::get_or_register_taskbar_created_message;
 use teamy_rust_windows_utils::tray::re_add_tray_icon;
 use tracing::error;
+use tracing::info;
 use tracing::instrument;
+use tracing::warn;
 use windows::Win32::Foundation::LPARAM;
 use windows::Win32::Foundation::WPARAM;
 use windows::Win32::Foundation::*;
@@ -22,7 +26,22 @@ pub unsafe extern "system" fn window_proc(
     // Cache the broadcast message atom once per process; cheap on subsequent calls.
     // If you prefer, this can be hoisted into a static in this module too.
     match message {
-        m if m == get_or_register_taskbar_created_message() => {
+        // Tray icon callback message (set via NOTIFYICONDATAW.uCallbackMessage = WM_USER + 1)
+        WM_USER_TRAY_CALLBACK  => {
+            match lparam.0 as u32 {
+                WM_LBUTTONDOWN => info!("Tray icon left button down"),
+                WM_LBUTTONUP => info!("Tray icon left button up"),
+                WM_LBUTTONDBLCLK => info!("Tray icon left button double click"),
+                WM_RBUTTONDOWN => info!("Tray icon right button down"),
+                WM_RBUTTONUP => info!("Tray icon right button up"),
+                WM_RBUTTONDBLCLK => info!("Tray icon right button double click"),
+                WM_CONTEXTMENU => info!("Tray icon context menu"),
+                WM_MOUSEMOVE => { /* ignore mouse move */ }
+                x => info!("Tray icon unknown event: {x}"),
+            }
+            LRESULT(0)
+        }
+        m if m == *WM_TASKBAR_CREATED => {
             // Explorer/taskbar restarted; re-add our tray icon
             if let Err(e) = re_add_tray_icon() {
                 error!("Failed to re-add tray icon after TaskbarCreated: {}", e);

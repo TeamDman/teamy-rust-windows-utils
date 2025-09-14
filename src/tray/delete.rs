@@ -1,4 +1,4 @@
-use crate::tray::ID_TRAYICON;
+use crate::tray::TRAY_ICON_ID;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Shell::NIM_DELETE;
 use windows::Win32::UI::Shell::NOTIFYICONDATAW;
@@ -8,7 +8,7 @@ pub fn delete_tray_icon(hwnd: HWND) -> eyre::Result<()> {
     let notify_icon_data = NOTIFYICONDATAW {
         cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
         hWnd: hwnd,
-        uID: ID_TRAYICON,
+        uID: TRAY_ICON_ID,
         ..Default::default()
     };
 

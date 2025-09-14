@@ -7,8 +7,9 @@ use windows::core::PCWSTR;
 use windows::core::Param;
 use windows::core::ParamValue;
 
-const WM_TRAYICON: u32 = WM_USER + 1;
-pub const ID_TRAYICON: u32 = 1;
+/// https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-user
+pub const WM_USER_TRAY_CALLBACK: u32 = WM_USER + 1;
+pub const TRAY_ICON_ID: u32 = 1;
 
 // Minimal, Send-friendly state to reconstruct the tray icon after Explorer restarts.
 #[derive(Clone, Copy)]
@@ -29,9 +30,9 @@ pub fn add_tray_icon(
     let mut notify_icon_data = NOTIFYICONDATAW {
         cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
         hWnd: hwnd,
-        uID: ID_TRAYICON,
+        uID: TRAY_ICON_ID,
         uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP,
-        uCallbackMessage: WM_TRAYICON,
+        uCallbackMessage: WM_USER_TRAY_CALLBACK,
         hIcon: icon,
         szTip: [0; 128],
         ..Default::default()
@@ -70,9 +71,9 @@ pub fn re_add_tray_icon() -> eyre::Result<()> {
     let nid = NOTIFYICONDATAW {
             cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
             hWnd: HWND(state.hwnd_bits as *mut c_void),
-            uID: ID_TRAYICON,
+            uID: TRAY_ICON_ID,
             uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP,
-            uCallbackMessage: WM_TRAYICON,
+            uCallbackMessage: WM_USER_TRAY_CALLBACK,
             hIcon: HICON(state.hicon_bits as *mut c_void),
             szTip: state.tip,
             ..Default::default()

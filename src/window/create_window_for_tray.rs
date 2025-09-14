@@ -5,6 +5,7 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::w;
 
+/// https://learn.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
 pub fn create_window_for_tray(window_proc: WNDPROC) -> eyre::Result<HWND> {
     debug!("Creating hidden window for tray icon");
     unsafe {
