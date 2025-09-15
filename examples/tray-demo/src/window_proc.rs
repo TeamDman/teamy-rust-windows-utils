@@ -56,6 +56,10 @@ pub unsafe extern "system" fn window_proc(
             LRESULT(0)
         }
         WM_DESTROY => {
+            // Clean up the tray icon before closing
+            if let Err(e) = delete_tray_icon(hwnd) {
+                error!("Failed to delete tray icon: {}", e);
+            }
             unsafe { PostQuitMessage(0) };
             LRESULT(0)
         }
