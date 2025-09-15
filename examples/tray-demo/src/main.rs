@@ -1,6 +1,6 @@
 pub mod window_proc;
 use crate::window_proc::window_proc;
-use teamy_rust_windows_utils::console::attach_ctrl_handler;
+use teamy_rust_windows_utils::console::attach_ctrl_c_handler;
 use teamy_rust_windows_utils::event_loop::run_message_loop;
 use teamy_rust_windows_utils::hicon::application_icon::get_application_icon;
 use teamy_rust_windows_utils::hicon::get_icon_from_current_module;
@@ -44,7 +44,7 @@ pub fn main() -> eyre::Result<()> {
 
     let window = create_window_for_tray(Some(window_proc))?;
 
-    attach_ctrl_handler()?;
+    attach_ctrl_c_handler()?;
 
     let icon = get_icon_from_current_module(w!("aaa_my_icon")).or_else(|e1| {
         eprintln!("Failed to load embedded icon 'aaa_my_icon': {e1}");
@@ -54,7 +54,7 @@ pub fn main() -> eyre::Result<()> {
 
     add_tray_icon(window, icon, tooltip)?;
 
-    run_message_loop()?;
+    run_message_loop(Some(window))?;
 
     Ok(())
 }

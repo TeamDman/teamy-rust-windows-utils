@@ -25,7 +25,7 @@ pub fn get_our_hwnd() -> Option<HWND> {
     }
 }
 
-pub unsafe extern "system" fn ctrl_handler(ctrl_type: u32) -> BOOL {
+pub unsafe extern "system" fn ctrl_c_handler(ctrl_type: u32) -> BOOL {
     match ctrl_type {
         CTRL_C_EVENT | CTRL_BREAK_EVENT | CTRL_CLOSE_EVENT | CTRL_LOGOFF_EVENT
         | CTRL_SHUTDOWN_EVENT => {
@@ -46,10 +46,10 @@ pub unsafe extern "system" fn ctrl_handler(ctrl_type: u32) -> BOOL {
     }
 }
 
-pub fn attach_ctrl_handler() -> windows::core::Result<()> {
+pub fn attach_ctrl_c_handler() -> windows::core::Result<()> {
     debug!("Attaching console ctrl handler");
     unsafe {
-        SetConsoleCtrlHandler(Some(ctrl_handler), true)?;
+        SetConsoleCtrlHandler(Some(ctrl_c_handler), true)?;
     }
     Ok(())
 }

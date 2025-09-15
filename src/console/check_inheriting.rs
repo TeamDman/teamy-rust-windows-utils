@@ -1,7 +1,8 @@
+use tracing::debug;
 use windows::Win32::System::Console::GetConsoleProcessList;
 
 pub fn is_inheriting_console() -> bool {
-    let mut pids = [0u32; 2]; // Buffer for at least two PIDs
+    let mut pids = [0u32; 4]; // Buffer for at least two PIDs
     // https://learn.microsoft.com/en-us/windows/console/getconsoleprocesslist
     let count = unsafe { GetConsoleProcessList(pids.as_mut_slice()) };
 
@@ -10,6 +11,13 @@ pub fn is_inheriting_console() -> bool {
     //             or a console app started in its own new window and we are that app).
     // count > 1: More than one process, implies we inherited from a parent (e.g., shell).
     let inheriting = count > 1;
+
+    debug!(
+        ?pids,
+        count,
+        inheriting,
+        "GetConsoleProcessList",
+    );
 
     // For very early diagnostics before tracing is set up:
     // eprintln!("[is_inheriting_console] GetConsoleProcessList count: {count}, inheriting: {inheriting}");

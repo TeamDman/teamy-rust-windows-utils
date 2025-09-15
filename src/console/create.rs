@@ -1,4 +1,4 @@
-use crate::console::ctrl_handler;
+use crate::console::ctrl_c_handler;
 use crate::console::enable_ansi_support;
 use eyre::Context;
 use tracing::info;
@@ -10,7 +10,7 @@ pub fn console_create() -> eyre::Result<()> {
     unsafe { AllocConsole() }.wrap_err("Failed to allocate console")?;
 
     // Attach ctrl+c handler
-    unsafe { SetConsoleCtrlHandler(Some(ctrl_handler), true) }
+    unsafe { SetConsoleCtrlHandler(Some(ctrl_c_handler), true) }
         .wrap_err("Failed to set console control handler")?;
 
     // Enable ANSI support
