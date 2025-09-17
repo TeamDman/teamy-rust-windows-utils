@@ -9,6 +9,7 @@ mod check_inheriting;
 mod ctrl_c_handler;
 mod detach;
 mod create;
+mod init;
 
 pub use ansi_support::*;
 pub use attach_to_existing::*;
@@ -16,3 +17,4 @@ pub use check_inheriting::*;
 pub use ctrl_c_handler::*;
 pub use detach::*;
 pub use create::*;
+pub use init::*;
