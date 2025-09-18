@@ -1,5 +1,4 @@
 use eyre::Context;
-use windows::Win32::Foundation::HANDLE;
 use windows::Win32::System::Console::ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 use windows::Win32::System::Console::GetConsoleMode;
 use windows::Win32::System::Console::GetStdHandle;
@@ -9,7 +8,7 @@ use windows::Win32::System::Console::SetConsoleMode;
 pub fn enable_ansi_support() -> eyre::Result<()> {
     unsafe {
         let handle = GetStdHandle(STD_OUTPUT_HANDLE).wrap_err("Failed to get standard output handle")?;
-        if handle == HANDLE::default() {
+        if handle.is_invalid() {
             return Err(windows::core::Error::from_thread())
                 .wrap_err("Got standard output handle, but it was invalid");
         }

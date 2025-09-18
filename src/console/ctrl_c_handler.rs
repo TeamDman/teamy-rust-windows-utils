@@ -47,7 +47,7 @@ pub unsafe extern "system" fn ctrl_c_handler(ctrl_type: u32) -> BOOL {
 }
 
 pub fn attach_ctrl_c_handler() -> windows::core::Result<()> {
-    debug!("Attaching console ctrl handler");
+    debug!("Attaching console ctrl+c handler");
     unsafe {
         SetConsoleCtrlHandler(Some(ctrl_c_handler), true)?;
     }

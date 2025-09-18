@@ -1,22 +1,27 @@
-use crate::console::ctrl_c_handler;
+use crate::console::attach_ctrl_c_handler;
+use crate::console::check_inheriting;
 use crate::console::enable_ansi_support;
 use eyre::Context;
+use tracing::error;
 use tracing::info;
 use windows::Win32::System::Console::AllocConsole;
-use windows::Win32::System::Console::SetConsoleCtrlHandler;
 
 pub fn console_create() -> eyre::Result<()> {
     // Create new console
     unsafe { AllocConsole() }.wrap_err("Failed to allocate console")?;
 
-    // Attach ctrl+c handler
-    unsafe { SetConsoleCtrlHandler(Some(ctrl_c_handler), true) }
-        .wrap_err("Failed to set console control handler")?;
+    _ = check_inheriting::is_inheriting_console(); // for logging
 
-    // Enable ANSI support
-    enable_ansi_support().wrap_err("Failed to enable ANSI support")?;
+    // Attach ctrl+c handler (continue on error)
+    if let Err(e) = attach_ctrl_c_handler().wrap_err("Failed to set console control handler") {
+        error!("{:?}", e);
+    }
 
-    
+    // Enable ANSI support (continue on error)
+    if let Err(e) = enable_ansi_support().wrap_err("Failed to enable ANSI support") {
+        error!("{:?}", e);
+    }
+
     // Tell the user whats up
     info!("Console allocated, new logs will be visible here.");
     info!("Closing this window will exit the program.");
