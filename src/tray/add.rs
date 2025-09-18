@@ -22,6 +22,8 @@ struct MinimalTrayState {
 
 static TRAY_STATE: Mutex<Option<MinimalTrayState>> = Mutex::new(None);
 
+/// Adds a tray icon to the system tray with the specified icon and tooltip.
+/// Returns the NOTIFYICONDATAW used to create the icon, which can be used for further modifications.
 pub fn add_tray_icon(
     hwnd: HWND,
     icon: HICON,

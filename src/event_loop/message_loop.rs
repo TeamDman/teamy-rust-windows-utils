@@ -5,6 +5,7 @@ use windows::Win32::UI::WindowsAndMessaging::GetMessageW;
 use windows::Win32::UI::WindowsAndMessaging::MSG;
 use windows::Win32::UI::WindowsAndMessaging::TranslateMessage;
 
+/// Pump the message loop for the given window handle, or all windows if None is provided.
 pub fn run_message_loop(hwnd: Option<HWND>) -> eyre::Result<()> {
     let mut msg = MSG::default();
     unsafe {
