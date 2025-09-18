@@ -1,5 +1,6 @@
 use crate::console::attach_ctrl_c_handler;
 use crate::console::check_inheriting;
+use crate::console::rebind_std_handles_to_console;
 use crate::console::enable_ansi_support;
 use eyre::Context;
 use tracing::error;
@@ -9,6 +10,11 @@ use windows::Win32::System::Console::AllocConsole;
 pub fn console_create() -> eyre::Result<()> {
     // Create new console
     unsafe { AllocConsole() }.wrap_err("Failed to allocate console")?;
+
+    // Important: When launched via tools like `cargo run`, the process may have
+    // invalid/redirected std handles. After AllocConsole, rebind them to the
+    // newly created console so println!/eprintln! and tracing output go there.
+    rebind_std_handles_to_console().wrap_err("Failed to bind std handles to console")?;
 
     _ = check_inheriting::is_inheriting_console(); // for logging
 

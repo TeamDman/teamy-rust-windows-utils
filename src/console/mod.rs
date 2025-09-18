@@ -4,6 +4,7 @@
 //! When creating system tray applications, I want the console to be hidden by default, but have it be restorable if the user uses a tray action to show logs.
 
 mod ansi_support;
+mod handles;
 mod attach_to_existing;
 mod check_inheriting;
 mod ctrl_c_handler;
@@ -12,6 +13,7 @@ mod create;
 mod init;
 
 pub use ansi_support::*;
+pub use handles::*;
 pub use attach_to_existing::*;
 pub use check_inheriting::*;
 pub use ctrl_c_handler::*;
