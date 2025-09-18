@@ -3,6 +3,7 @@ use std::path::Path;
 use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS;
 use windows::Win32::Storage::FileSystem::FILE_FLAGS_AND_ATTRIBUTES;
 
+#[allow(unused)]
 pub trait IsAvailableOnDevice {
     fn is_available_on_device(&self) -> eyre::Result<bool>;
 }
