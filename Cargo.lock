@@ -1114,7 +1114,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "teamy-rust-windows-utils"
+name = "teamy-windows"
 version = "0.1.0"
 dependencies = [
  "eyre",
@@ -1314,7 +1314,7 @@ dependencies = [
  "color-eyre",
  "embed-resource",
  "eyre",
- "teamy-rust-windows-utils",
+ "teamy-windows",
  "tracing",
  "tracing-subscriber",
  "windows",

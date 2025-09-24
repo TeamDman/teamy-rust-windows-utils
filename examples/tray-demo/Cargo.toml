@@ -7,7 +7,7 @@ license.workspace=true
 edition.workspace=true
 
 [dependencies]
-teamy-rust-windows-utils = { path = "../../" }
+teamy-windows = { path = "../../" }
 windows.workspace = true
 eyre.workspace=true
 color-eyre.workspace=true
