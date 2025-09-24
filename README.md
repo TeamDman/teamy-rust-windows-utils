@@ -1,4 +1,11 @@
+<div align="center">
+
 # Teamy Rust Windows Utils
+
+![Crates.io Version](https://img.shields.io/crates/v/teamy-windows)
+
+</div>
+
 
 ## Windows Features
 

@@ -11,7 +11,7 @@ use tracing_subscriber::fmt::writer::Tee;
 /// Captures logs to be replayed later when the user requests to see them.
 /// 
 /// ```
-/// use teamy_rust_windows_utils::log::LOG_BUFFER;
+/// use teamy_windows::log::LOG_BUFFER;
 /// use tracing::Level;
 /// use tracing_subscriber::fmt::SubscriberBuilder;
 /// use tracing_subscriber::fmt::writer::MakeWriterExt;

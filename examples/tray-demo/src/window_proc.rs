@@ -1,7 +1,7 @@
-use teamy_rust_windows_utils::tray::WM_TASKBAR_CREATED;
-use teamy_rust_windows_utils::tray::WM_USER_TRAY_CALLBACK;
-use teamy_rust_windows_utils::tray::delete_tray_icon;
-use teamy_rust_windows_utils::tray::re_add_tray_icon;
+use teamy_windows::tray::WM_TASKBAR_CREATED;
+use teamy_windows::tray::WM_USER_TRAY_CALLBACK;
+use teamy_windows::tray::delete_tray_icon;
+use teamy_windows::tray::re_add_tray_icon;
 use tracing::error;
 use tracing::info;
 use tracing::instrument;

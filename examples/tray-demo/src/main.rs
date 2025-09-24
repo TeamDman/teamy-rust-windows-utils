@@ -1,11 +1,11 @@
 pub mod window_proc;
 use crate::window_proc::window_proc;
-use teamy_rust_windows_utils::console::attach_ctrl_c_handler;
-use teamy_rust_windows_utils::event_loop::run_message_loop;
-use teamy_rust_windows_utils::hicon::application_icon::get_application_icon;
-use teamy_rust_windows_utils::hicon::get_icon_from_current_module;
-use teamy_rust_windows_utils::tray::add_tray_icon;
-use teamy_rust_windows_utils::window::create_window_for_tray;
+use teamy_windows::console::attach_ctrl_c_handler;
+use teamy_windows::event_loop::run_message_loop;
+use teamy_windows::hicon::application_icon::get_application_icon;
+use teamy_windows::hicon::get_icon_from_current_module;
+use teamy_windows::tray::add_tray_icon;
+use teamy_windows::window::create_window_for_tray;
 use tracing::info;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
