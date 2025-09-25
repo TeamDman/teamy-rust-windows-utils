@@ -1,10 +1,10 @@
+use crate::string::pcwstr_guard::PCWSTRGuard;
 use eyre::eyre;
 use std::convert::Infallible;
 use std::ffi::OsString;
+use std::path::Path;
 use std::path::PathBuf;
 use widestring::U16CString;
-
-use crate::string::pcwstr_guard::PCWSTRGuard;
 
 /// Conversion to `PCWSTRGuard` from various string types for easy FFI usage.
 pub trait EasyPCWSTR {
@@ -58,16 +58,42 @@ impl EasyPCWSTR for PathBuf {
     }
 }
 
+impl EasyPCWSTR for &PathBuf {
+    type Error = eyre::Error;
+
+    fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
+        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(
+            self.as_os_str(),
+        )))
+    }
+}
+
+impl EasyPCWSTR for &Path {
+    type Error = eyre::Error;
+
+    fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
+        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(
+            self.as_os_str(),
+        )))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::EasyPCWSTR;
     use std::ffi::OsString;
+    use std::path::Path;
+    use std::path::PathBuf;
+    use widestring::U16CString;
 
     #[test]
     fn it_works() -> eyre::Result<()> {
         "Hello, World!".easy_pcwstr()?;
         OsString::from("asd").easy_pcwstr()?;
         "asd".to_string().easy_pcwstr()?;
+        PathBuf::from("asd").easy_pcwstr()?;
+        Path::new("asd").easy_pcwstr()?;
+        U16CString::from_str("asd")?.easy_pcwstr()?;
         Ok(())
     }
 }

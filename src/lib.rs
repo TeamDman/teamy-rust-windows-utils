@@ -10,4 +10,4 @@ pub mod hicon;
 pub mod event_loop;
 pub mod job;
 pub mod log;
-mod file;
+pub mod file;

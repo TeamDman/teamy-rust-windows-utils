@@ -5,7 +5,7 @@ members = ["examples/*"]
 authors = ["TeamDman"]
 description = "A collection of my Rust utilities for interacting with Windows."
 repository = "https://github.com/TeamDman/teamy-rust-windows-utils.git"
-version = "0.1.0"
+version = "0.2.0"
 license = "MPL-2.0"
 edition = "2024"
 
@@ -64,3 +64,5 @@ tracing.workspace=true
 widestring.workspace=true
 windows.workspace=true
 tracing-subscriber.workspace=true
+crossbeam-channel = "0.5.15"
+uom = { version = "0.37.0", features = ["usize"] } # "u64", "autoconvert", 
