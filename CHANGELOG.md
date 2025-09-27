@@ -1,3 +1,7 @@
+# v0.3.0 — 2025-09-24
+
+- Replace `PhysicalReadResults.total_size` field with `PhysicalReadResults::total_logical_size()` fn
+
 # v0.2.0 — 2025-09-24
 
 - Add `EasyPCWSTR` implementation for &Path
