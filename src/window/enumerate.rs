@@ -42,7 +42,7 @@ fn serialize_hwnd<S>(hwnd: &HWND, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
-    serializer.collect_str(&format!("{:?}", hwnd))
+    serializer.serialize_u64(hwnd.0 as u64)
 }
 
 #[cfg(feature = "serde")]
