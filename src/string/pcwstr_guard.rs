@@ -1,5 +1,4 @@
 use std::ops::Deref;
-
 use widestring::U16CString;
 use windows::core::PCWSTR;
 use windows::core::Param;
@@ -32,7 +31,7 @@ impl Deref for PCWSTRGuard {
     }
 }
 
-/// MUST NOT implement this for `PCWSTRGuard` itself, only for `&PCWSTRGuard`, 
+/// MUST NOT implement this for `PCWSTRGuard` itself, only for `&PCWSTRGuard`,
 /// to ensure the data the PCWSTR points to is valid for the lifetime of the parameter.
 impl Param<PCWSTR> for &PCWSTRGuard {
     unsafe fn param(self) -> windows::core::ParamValue<PCWSTR> {

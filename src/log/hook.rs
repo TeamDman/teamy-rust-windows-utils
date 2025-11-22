@@ -1,11 +1,11 @@
 use crate::log::LOG_BUFFER;
 use eyre::Context;
-use tracing::debug;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
 use std::process::Child;
+use tracing::debug;
 use tracing::error;
 
 pub trait IoHook {

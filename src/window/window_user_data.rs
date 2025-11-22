@@ -21,22 +21,20 @@ pub fn set_window_user_data<T: WindowUserData>(hwnd: HWND, data: T) -> eyre::Res
         hwnd,
         std::panic::Location::caller()
     );
-    unsafe {
-        SetLastError(WIN32_ERROR(0));
-        let rtn = SetWindowLongPtrW(hwnd, GWLP_USERDATA, Box::into_raw(Box::new(data)) as _);
-        if rtn == 0 {
-            let cause = windows::core::Error::from_thread();
-            if cause.code().0 == 0 {
-                // This means the previous value was actually zero, so no error occurred
-                return Ok(());
-            } else {
-                bail!(eyre::eyre!("Failed to set window user data").wrap_err(cause));
-            }
-        } else {
-            // Free previous pointer to avoid leaking when replacing
-            let _ = Box::from_raw(rtn as *mut T);
+    unsafe { SetLastError(WIN32_ERROR(0)) };
+    let rtn = unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, Box::into_raw(Box::new(data)) as _) };
+    if rtn == 0 {
+        let cause = windows::core::Error::from_thread();
+        if cause.code().0 == 0 {
+            // This means the previous value was actually zero, so no error occurred
             Ok(())
+        } else {
+            bail!(eyre::eyre!("Failed to set window user data").wrap_err(cause));
         }
+    } else {
+        // Free previous pointer to avoid leaking when replacing
+        let _ = unsafe { Box::from_raw(rtn as *mut T) };
+        Ok(())
     }
 }
 
@@ -64,13 +62,11 @@ pub fn clear_window_user_data<T: WindowUserData>(hwnd: HWND) -> eyre::Result<()>
         hwnd,
         std::panic::Location::caller()
     );
-    unsafe {
-        SetLastError(WIN32_ERROR(0));
-        let prev = SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-        // If prev == 0 and last error is 0, there was nothing stored; otherwise drop previous
-        if prev != 0 {
-            let _ = Box::from_raw(prev as *mut T);
-        }
-        Ok(())
+    unsafe { SetLastError(WIN32_ERROR(0)) };
+    let prev = unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
+    // If prev == 0 and last error is 0, there was nothing stored; otherwise drop previous
+    if prev != 0 {
+        let _ = unsafe { Box::from_raw(prev as *mut T) };
     }
+    Ok(())
 }

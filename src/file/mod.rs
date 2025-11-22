@@ -1,7 +1,7 @@
 mod onedrive;
-mod watch;
 mod read;
+mod watch;
 
 pub use onedrive::*;
-pub use watch::*;
 pub use read::*;
+pub use watch::*;

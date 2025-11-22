@@ -2,29 +2,29 @@ use clap::Args;
 use clap::Subcommand;
 use eyre::Result;
 
-pub mod context_menu;
+pub mod list;
 
 #[derive(Args, Debug)]
-pub struct ExplorerArgs {
+pub struct WindowArgs {
     #[command(subcommand)]
-    pub command: ExplorerCommand,
+    pub command: WindowCommand,
 }
 
-impl ExplorerArgs {
+impl WindowArgs {
     pub fn invoke(self) -> Result<()> {
         self.command.invoke()
     }
 }
 
 #[derive(Subcommand, Debug)]
-pub enum ExplorerCommand {
-    ContextMenu(context_menu::ContextMenuArgs),
+pub enum WindowCommand {
+    List(list::WindowListArgs),
 }
 
-impl ExplorerCommand {
+impl WindowCommand {
     pub fn invoke(self) -> Result<()> {
         match self {
-            ExplorerCommand::ContextMenu(args) => args.invoke(),
+            WindowCommand::List(args) => args.invoke(),
         }
     }
 }

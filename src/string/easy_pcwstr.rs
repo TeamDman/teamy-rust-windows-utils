@@ -35,14 +35,14 @@ impl EasyPCWSTR for &OsString {
     type Error = eyre::Error;
 
     fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
-        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(&self)))
+        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(self)))
     }
 }
 impl EasyPCWSTR for &OsStr {
     type Error = eyre::Error;
 
     fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
-        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(&self)))
+        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(self)))
     }
 }
 

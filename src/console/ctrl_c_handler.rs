@@ -25,6 +25,9 @@ pub fn get_our_hwnd() -> Option<HWND> {
     }
 }
 
+/// # Safety
+///
+/// This function is an extern "system" callback.
 pub unsafe extern "system" fn ctrl_c_handler(ctrl_type: u32) -> BOOL {
     match ctrl_type {
         CTRL_C_EVENT | CTRL_BREAK_EVENT | CTRL_CLOSE_EVENT | CTRL_LOGOFF_EVENT

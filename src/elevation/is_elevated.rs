@@ -15,35 +15,39 @@ static IS_ELEVATED: OnceLock<bool> = OnceLock::new();
 
 /// Checks if the current process is running with elevated privileges.
 pub fn is_elevated() -> bool {
-    *IS_ELEVATED.get_or_init(|| unsafe {
-        let mut token_handle = Owned::new(HANDLE::default());
-        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, token_handle.deref_mut()).is_err() {
-            eprintln!("Failed to open process token. Error: {:?}", GetLastError());
+    *IS_ELEVATED.get_or_init(|| {
+        let mut token_handle = unsafe { Owned::new(HANDLE::default()) };
+        let current_process = unsafe { GetCurrentProcess() };
+        if unsafe { OpenProcessToken(current_process, TOKEN_QUERY, token_handle.deref_mut()) }
+            .is_err()
+        {
+            eprintln!("Failed to open process token. Error: {:?}", unsafe {
+                GetLastError()
+            });
             return false;
         }
 
         let mut elevation = TOKEN_ELEVATION::default();
         let mut return_length = 0;
 
-        let ok = GetTokenInformation(
-            *token_handle,
-            TokenElevation,
-            Some(&mut elevation as *mut _ as *mut _),
-            size_of::<TOKEN_ELEVATION>() as u32,
-            &mut return_length,
-        )
+        let ok = unsafe {
+            GetTokenInformation(
+                *token_handle,
+                TokenElevation,
+                Some(&mut elevation as *mut _ as *mut _),
+                size_of::<TOKEN_ELEVATION>() as u32,
+                &mut return_length,
+            )
+        }
         .is_ok();
 
-        let result = if ok {
+        if ok {
             elevation.TokenIsElevated != 0
         } else {
-            eprintln!(
-                "Failed to get token information. Error: {:?}",
+            eprintln!("Failed to get token information. Error: {:?}", unsafe {
                 GetLastError()
-            );
+            });
             false
-        };
-
-        result
+        }
     })
 }

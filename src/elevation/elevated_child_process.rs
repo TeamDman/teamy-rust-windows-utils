@@ -5,20 +5,17 @@ use windows::Win32::System::Threading::GetExitCodeProcess;
 use windows::Win32::System::Threading::INFINITE;
 use windows::Win32::System::Threading::WaitForSingleObject;
 
-
 pub struct ElevatedChildProcess {
     pub h_process: HANDLE,
 }
 
 impl ElevatedChildProcess {
     pub fn wait(self) -> eyre::Result<u32> {
-        unsafe {
-            WaitForSingleObject(self.h_process, INFINITE);
-            let mut code = 0u32;
-            GetExitCodeProcess(self.h_process, &mut code)
-                .map_err(|e| eyre!("Failed to get exit code: {}", e))?;
-            CloseHandle(self.h_process)?;
-            Ok(code)
-        }
+        unsafe { WaitForSingleObject(self.h_process, INFINITE) };
+        let mut code = 0u32;
+        unsafe { GetExitCodeProcess(self.h_process, &mut code) }
+            .map_err(|e| eyre!("Failed to get exit code: {}", e))?;
+        unsafe { CloseHandle(self.h_process) }?;
+        Ok(code)
     }
 }

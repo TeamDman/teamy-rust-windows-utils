@@ -1,6 +1,8 @@
 use eyre::Result;
 use windows::Win32::Foundation::RPC_E_CHANGED_MODE;
-use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED};
+use windows::Win32::System::Com::COINIT_APARTMENTTHREADED;
+use windows::Win32::System::Com::CoInitializeEx;
+use windows::Win32::System::Com::CoUninitialize;
 
 /// RAII Guard for COM Initialization.
 ///

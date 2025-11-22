@@ -1,7 +1,7 @@
 use crate::console::attach_ctrl_c_handler;
 use crate::console::check_inheriting;
-use crate::console::rebind_std_handles_to_console;
 use crate::console::enable_ansi_support;
+use crate::console::rebind_std_handles_to_console;
 use eyre::Context;
 use tracing::error;
 use tracing::info;

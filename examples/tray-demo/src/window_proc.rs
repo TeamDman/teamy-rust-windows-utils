@@ -15,6 +15,7 @@ use windows::Win32::UI::WindowsAndMessaging::WM_CLOSE;
 use windows::Win32::UI::WindowsAndMessaging::WM_DESTROY;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
+/// Safety: This function is an extern "system" callback.
 #[instrument]
 pub unsafe extern "system" fn window_proc(
     hwnd: HWND,
@@ -26,7 +27,7 @@ pub unsafe extern "system" fn window_proc(
     // If you prefer, this can be hoisted into a static in this module too.
     match message {
         // Tray icon callback message (set via NOTIFYICONDATAW.uCallbackMessage = WM_USER + 1)
-        WM_USER_TRAY_CALLBACK  => {
+        WM_USER_TRAY_CALLBACK => {
             match lparam.0 as u32 {
                 WM_LBUTTONDOWN => info!("Tray icon left button down"),
                 WM_LBUTTONUP => info!("Tray icon left button up"),
@@ -63,8 +64,6 @@ pub unsafe extern "system" fn window_proc(
             unsafe { PostQuitMessage(0) };
             LRESULT(0)
         }
-        _ => {
-            return unsafe { DefWindowProcW(hwnd, message, wparam, lparam) };
-        }
+        _ => unsafe { DefWindowProcW(hwnd, message, wparam, lparam) },
     }
 }

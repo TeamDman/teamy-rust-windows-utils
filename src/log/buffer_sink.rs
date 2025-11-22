@@ -9,7 +9,7 @@ use tracing_subscriber::fmt::writer::BoxMakeWriter;
 use tracing_subscriber::fmt::writer::Tee;
 
 /// Captures logs to be replayed later when the user requests to see them.
-/// 
+///
 /// ```
 /// use teamy_windows::log::LOG_BUFFER;
 /// use tracing::Level;
@@ -21,7 +21,7 @@ use tracing_subscriber::fmt::writer::Tee;
 ///    .finish()
 ///    .init();
 /// ```
-pub static LOG_BUFFER: LazyLock<BufferSink> = LazyLock::new(|| BufferSink::default());
+pub static LOG_BUFFER: LazyLock<BufferSink> = LazyLock::new(BufferSink::default);
 
 pub static DUAL_WRITER: LazyLock<Tee<BoxMakeWriter, BufferSink>> =
     LazyLock::new(|| Tee::new(BoxMakeWriter::new(std::io::stderr), LOG_BUFFER.clone()));

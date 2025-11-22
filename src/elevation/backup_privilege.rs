@@ -14,54 +14,57 @@ use windows::Win32::System::Threading::GetCurrentProcess;
 use windows::Win32::System::Threading::OpenProcessToken;
 
 /// Enables backup and security privileges for the current process.
-/// 
+///
 /// Permits raw disk reads.
 pub fn enable_backup_privileges() -> eyre::Result<()> {
     use std::mem::size_of;
 
+    // Get current process token
+    let mut token = windows::Win32::Foundation::HANDLE::default();
+    let current_process = unsafe { GetCurrentProcess() };
     unsafe {
-        // Get current process token
-        let mut token = windows::Win32::Foundation::HANDLE::default();
         OpenProcessToken(
-            GetCurrentProcess(),
+            current_process,
             TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
             &mut token,
         )
-        .wrap_err_with(|| "Failed to open process token")?;
+    }
+    .wrap_err_with(|| "Failed to open process token")?;
 
-        // Enable multiple privileges that might be needed
-        let privileges_to_enable = [SE_BACKUP_NAME, SE_RESTORE_NAME, SE_SECURITY_NAME];
+    // Enable multiple privileges that might be needed
+    let privileges_to_enable = [SE_BACKUP_NAME, SE_RESTORE_NAME, SE_SECURITY_NAME];
 
-        for privilege_name in &privileges_to_enable {
-            // Look up the privilege LUID
-            let mut luid = LUID::default();
-            if LookupPrivilegeValueW(None, *privilege_name, &mut luid).is_ok() {
-                // Set up the privilege structure
-                let privileges = TOKEN_PRIVILEGES {
-                    PrivilegeCount: 1,
-                    Privileges: [windows::Win32::Security::LUID_AND_ATTRIBUTES {
-                        Luid: luid,
-                        Attributes: SE_PRIVILEGE_ENABLED,
-                    }],
-                };
+    for privilege_name in &privileges_to_enable {
+        // Look up the privilege LUID
+        let mut luid = LUID::default();
+        if unsafe { LookupPrivilegeValueW(None, *privilege_name, &mut luid) }.is_ok() {
+            // Set up the privilege structure
+            let privileges = TOKEN_PRIVILEGES {
+                PrivilegeCount: 1,
+                Privileges: [windows::Win32::Security::LUID_AND_ATTRIBUTES {
+                    Luid: luid,
+                    Attributes: SE_PRIVILEGE_ENABLED,
+                }],
+            };
 
-                // Adjust token privileges
-                let _ = AdjustTokenPrivileges(
+            // Adjust token privileges
+            let _ = unsafe {
+                AdjustTokenPrivileges(
                     token,
                     false,
                     Some(&privileges),
                     size_of::<TOKEN_PRIVILEGES>() as u32,
                     None,
                     None,
-                );
-            }
+                )
+            };
         }
-
-        // Close token handle
-        windows::Win32::Foundation::CloseHandle(token)
-            .wrap_err_with(|| "Failed to close token handle")?;
-
-        info!("Successfully enabled backup privileges");
-        Ok(())
     }
+
+    // Close token handle
+    unsafe { windows::Win32::Foundation::CloseHandle(token) }
+        .wrap_err_with(|| "Failed to close token handle")?;
+
+    info!("Successfully enabled backup privileges");
+    Ok(())
 }

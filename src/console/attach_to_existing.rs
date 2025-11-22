@@ -2,9 +2,9 @@ use crate::console::console_detach;
 use crate::console::enable_ansi_support;
 use crate::console::rebind_std_handles_to_console;
 use eyre::Context;
-use tracing::warn;
 use tracing::Level;
 use tracing::info;
+use tracing::warn;
 use windows::Win32::System::Console::*;
 
 /// If called by a new process attaching to an existing process,

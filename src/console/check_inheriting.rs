@@ -12,12 +12,7 @@ pub fn is_inheriting_console() -> bool {
     // count > 1: More than one process, implies we inherited from a parent (e.g., shell).
     let inheriting = count > 1;
 
-    debug!(
-        ?pids,
-        count,
-        inheriting,
-        "GetConsoleProcessList",
-    );
+    debug!(?pids, count, inheriting, "GetConsoleProcessList",);
 
     // For very early diagnostics before tracing is set up:
     // eprintln!("[is_inheriting_console] GetConsoleProcessList count: {count}, inheriting: {inheriting}");

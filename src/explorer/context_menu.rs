@@ -1,18 +1,14 @@
-#![allow(unsafe_op_in_unsafe_fn)]
-use std::path::Path;
-
-use eyre::{Result, bail};
-use windows::{
-    core::*,
-    Win32::Foundation::*,
-    Win32::System::Com::*,
-    Win32::UI::Shell::*,
-    Win32::UI::Shell::Common::*,
-    Win32::UI::WindowsAndMessaging::*,
-};
-
-use crate::string::EasyPCWSTR;
 use crate::com::com_guard::ComGuard;
+use crate::string::EasyPCWSTR;
+use eyre::Result;
+use eyre::bail;
+use std::path::Path;
+use windows::Win32::Foundation::*;
+use windows::Win32::System::Com::*;
+use windows::Win32::UI::Shell::Common::*;
+use windows::Win32::UI::Shell::*;
+use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::core::*;
 
 #[derive(Debug, Clone)]
 pub struct ContextMenuEntry {
@@ -23,6 +19,9 @@ pub struct ContextMenuEntry {
     pub is_separator: bool,
 }
 
+/// # Safety
+///
+/// This function calls unsafe Windows APIs.
 pub unsafe fn get_context_menu_entries(path: impl AsRef<Path>) -> Result<Vec<ContextMenuEntry>> {
     // Canonicalize path.
     let path = path.as_ref().canonicalize()?;
@@ -41,13 +40,15 @@ pub unsafe fn get_context_menu_entries(path: impl AsRef<Path>) -> Result<Vec<Con
 
     // Note: This expects a full absolute path
     // We ensure the path is absolute before calling this.
-    SHParseDisplayName(
-        path_str.easy_pcwstr()?.as_ref(),
-        None,
-        &mut pidl,
-        0,
-        Some(&mut sfgao_out),
-    )?;
+    unsafe {
+        SHParseDisplayName(
+            path_str.easy_pcwstr()?.as_ref(),
+            None,
+            &mut pidl,
+            0,
+            Some(&mut sfgao_out),
+        )
+    }?;
 
     if pidl.is_null() {
         bail!("Failed to get PIDL for path: {}", path.display());
@@ -57,39 +58,27 @@ pub unsafe fn get_context_menu_entries(path: impl AsRef<Path>) -> Result<Vec<Con
     // We need the IShellFolder of the parent, and the relative PIDL of the child
     let mut child_pidl: *mut ITEMIDLIST = std::ptr::null_mut();
 
-    let parent_folder: IShellFolder = SHBindToParent(
-        pidl,
-        Some(&mut child_pidl),
-    )?;
+    let parent_folder: IShellFolder = unsafe { SHBindToParent(pidl, Some(&mut child_pidl)) }?;
 
     // 4. Get the IContextMenu Interface
     // We ask the parent folder for the Context Menu handler for the child item
-    let context_menu: IContextMenu = parent_folder.GetUIObjectOf(
-        HWND(0 as _),
-        &[child_pidl],
-        None,
-    )?;
+    let context_menu: IContextMenu =
+        unsafe { parent_folder.GetUIObjectOf(HWND(0 as _), &[child_pidl], None) }?;
 
     // 5. Create a fake Menu to capture the items
-    let hmenu = CreatePopupMenu()?;
+    let hmenu = unsafe { CreatePopupMenu() }?;
 
     // 6. Ask the interface to populate our menu
     // Flags: CMF_NORMAL (standard right click).
     // Use CMF_EXTENDEDVERBS if you want "Shift+RightClick" hidden items.
-    context_menu.QueryContextMenu(
-        hmenu,
-        0,
-        1,
-        0x7FFF,
-        CMF_NORMAL,
-    ).ok()?;
+    unsafe { context_menu.QueryContextMenu(hmenu, 0, 1, 0x7FFF, CMF_NORMAL) }.ok()?;
 
     // 7. Iterate and Collect
-    let entries = walk_menu(hmenu, &context_menu);
+    let entries = unsafe { walk_menu(hmenu, &context_menu) };
 
     // Cleanup
-    DestroyMenu(hmenu)?;
-    CoTaskMemFree(Some(pidl as _));
+    unsafe { DestroyMenu(hmenu) }?;
+    unsafe { CoTaskMemFree(Some(pidl as _)) };
     // Note: child_pidl is a pointer *into* pidl (usually), or managed by SHBindToParent logic,
     // but strict PIDL management is complex. In simple tools, letting OS cleanup on process exit is common.
 
@@ -97,7 +86,7 @@ pub unsafe fn get_context_menu_entries(path: impl AsRef<Path>) -> Result<Vec<Con
 }
 
 unsafe fn walk_menu(hmenu: HMENU, context_menu: &IContextMenu) -> Vec<ContextMenuEntry> {
-    let count = GetMenuItemCount(Some(hmenu));
+    let count = unsafe { GetMenuItemCount(Some(hmenu)) };
     let mut entries = Vec::new();
 
     for i in 0..count {
@@ -112,7 +101,7 @@ unsafe fn walk_menu(hmenu: HMENU, context_menu: &IContextMenu) -> Vec<ContextMen
         info.dwTypeData = PWSTR(buffer.as_mut_ptr());
         info.cch = 256;
 
-        if GetMenuItemInfoW(hmenu, i as u32, true, &mut info).is_ok() {
+        if unsafe { GetMenuItemInfoW(hmenu, i as u32, true, &mut info) }.is_ok() {
             // Check for separators
             if (info.fType & MFT_SEPARATOR) == MFT_SEPARATOR {
                 entries.push(ContextMenuEntry {
@@ -128,12 +117,12 @@ unsafe fn walk_menu(hmenu: HMENU, context_menu: &IContextMenu) -> Vec<ContextMen
             let label = String::from_utf16_lossy(&buffer[..info.cch as usize]);
 
             // Try to get the "Verb" (Programmatic Name)
-            let verb = get_verb(context_menu, info.wID);
+            let verb = unsafe { get_verb(context_menu, info.wID) };
 
             let mut sub_items = Vec::new();
             // Recursion for submenus (Expandos)
             if !info.hSubMenu.is_invalid() {
-                sub_items = walk_menu(info.hSubMenu, context_menu);
+                sub_items = unsafe { walk_menu(info.hSubMenu, context_menu) };
             }
 
             entries.push(ContextMenuEntry {
@@ -152,7 +141,7 @@ unsafe fn walk_menu(hmenu: HMENU, context_menu: &IContextMenu) -> Vec<ContextMen
 unsafe fn get_verb(context_menu: &IContextMenu, id: u32) -> String {
     // IDs usually start at 1 (the offset we passed to QueryContextMenu)
     // If the ID is very large or 0, it might be system reserved
-    if id < 1 || id > 0x7FFF {
+    if !(1..=0x7FFF).contains(&id) {
         return "".to_string();
     }
 

@@ -1,7 +1,7 @@
+use crate::invocation::to_args::Invocable;
+use crate::invocation::to_args::ToArgs;
 use std::ffi::OsString;
 use std::path::PathBuf;
-
-use crate::invocation::to_args::{Invocable, ToArgs};
 
 /// Unit struct representing the current invocation's arguments with console PID added
 #[derive(Debug, Clone)]

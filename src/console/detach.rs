@@ -1,7 +1,7 @@
+use crate::console::unbind_and_close_std_handles_for_detach;
 use eyre::Context;
 use tracing::info;
 use windows::Win32::System::Console::FreeConsole;
-use crate::console::unbind_and_close_std_handles_for_detach;
 
 pub fn console_detach() -> eyre::Result<()> {
     info!(

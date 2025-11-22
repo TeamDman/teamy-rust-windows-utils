@@ -10,7 +10,7 @@ pub trait HandleReadExt {
 impl<T: AsRef<HANDLE>> HandleReadExt for T {
     fn try_read_exact(&self, offset: i64, buf: &mut [u8]) -> eyre::Result<()> {
         let handle = *self.as_ref();
-        
+
         // Seek
         unsafe {
             SetFilePointerEx(handle, offset, None, FILE_BEGIN)?;

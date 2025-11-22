@@ -8,12 +8,10 @@ use windows::Win32::UI::WindowsAndMessaging::TranslateMessage;
 /// Pump the message loop for the given window handle, or all windows if None is provided.
 pub fn run_message_loop(hwnd: Option<HWND>) -> eyre::Result<()> {
     let mut msg = MSG::default();
-    unsafe {
-        debug!("Starting message loop");
-        while GetMessageW(&mut msg, hwnd, 0, 0).into() {
-            _ = TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-        }
+    debug!("Starting message loop");
+    while unsafe { GetMessageW(&mut msg, hwnd, 0, 0) }.into() {
+        let _ = unsafe { TranslateMessage(&msg) };
+        unsafe { DispatchMessageW(&msg) };
     }
     Ok(())
 }

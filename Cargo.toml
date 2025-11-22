@@ -1,6 +1,9 @@
 [workspace]
 members = ["examples/*"]
 
+[workspace.lints.clippy]
+multiple_unsafe_ops_per_block = "deny"
+
 [workspace.package]
 authors = ["TeamDman"]
 description = "A collection of my Rust utilities for interacting with Windows."
@@ -57,6 +60,9 @@ repository.workspace=true
 version.workspace=true
 license.workspace=true
 edition.workspace=true
+
+[lints]
+workspace = true
 
 [dependencies]
 eyre.workspace=true

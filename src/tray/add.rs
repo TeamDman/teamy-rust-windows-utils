@@ -69,7 +69,7 @@ pub fn add_tray_icon(
 pub fn re_add_tray_icon() -> eyre::Result<()> {
     let saved = {
         let guard = TRAY_STATE.lock().unwrap();
-        (*guard).clone()
+        *guard
     };
     if let Some(state) = saved {
         let nid = NOTIFYICONDATAW {

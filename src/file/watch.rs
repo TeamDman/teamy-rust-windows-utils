@@ -2,10 +2,12 @@ use crate::string::EasyPCWSTR;
 use crossbeam_channel::Receiver;
 use crossbeam_channel::unbounded;
 use eyre::Context;
-use uom::si::information::mebibyte;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
+use uom::si::information::byte;
+use uom::si::information::mebibyte;
+use uom::si::usize::Information;
 use windows::Win32::Storage::FileSystem::CreateFileW;
 use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_NORMAL;
 use windows::Win32::Storage::FileSystem::FILE_BEGIN;
@@ -18,8 +20,6 @@ use windows::Win32::Storage::FileSystem::OPEN_EXISTING;
 use windows::Win32::Storage::FileSystem::ReadFile;
 use windows::Win32::Storage::FileSystem::SetFilePointerEx;
 use windows::core::Owned;
-use uom::si::information::byte;
-use uom::si::usize::Information;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WatchInitBehaviour {
@@ -57,22 +57,20 @@ pub fn watch_file_content(config: WatchConfig) -> eyre::Result<Receiver<Vec<u8>>
         .name("win-file-content-watch".into())
         .spawn(move || {
             // Open via Win32 CreateFileW with shared access
-            let handle = unsafe {
-                Owned::new(
-                    CreateFileW(
-                        path.as_path().easy_pcwstr()?.as_ref(),
-                        FILE_GENERIC_READ.0,
-                        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                        None,
-                        OPEN_EXISTING,
-                        FILE_ATTRIBUTE_NORMAL,
-                        None,
-                    )
-                    .with_context(|| {
-                        format!("Failed to open file for watching: {}", path.display())
-                    })?,
+            let raw_handle = unsafe {
+                CreateFileW(
+                    path.as_path().easy_pcwstr()?.as_ref(),
+                    FILE_GENERIC_READ.0,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    None,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL,
+                    None,
                 )
-            };
+            }
+            .with_context(|| format!("Failed to open file for watching: {}", path.display()))?;
+
+            let handle = unsafe { Owned::new(raw_handle) };
 
             // Determine starting position
             let mut current_pos: i64 = 0;
