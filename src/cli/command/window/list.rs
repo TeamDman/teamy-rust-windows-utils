@@ -1,21 +1,43 @@
+use crate::cli::to_args::ToArgs;
 use crate::window::enumerate_windows;
+use arbitrary::Arbitrary;
 use clap::{Args, ValueEnum};
 use eyre::Result;
+use std::ffi::OsString;
 
-#[derive(ValueEnum, Clone, Debug, PartialEq)]
+#[derive(ValueEnum, Clone, Debug, PartialEq, Arbitrary)]
 pub enum WindowListArgsOutputFormat {
     Text,
     #[cfg(feature = "serde")]
     Json,
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Arbitrary, PartialEq)]
 pub struct WindowListArgs {
     #[arg(long)]
     pub all: bool,
 
     #[arg(long, short, default_value = "text")]
     pub output: WindowListArgsOutputFormat,
+}
+
+impl ToArgs for WindowListArgs {
+    fn to_args(&self) -> Vec<OsString> {
+        let mut args = Vec::new();
+        if self.all {
+            args.push("--all".into());
+        }
+        args.push("--output".into());
+        args.push(
+            match self.output {
+                WindowListArgsOutputFormat::Text => "text",
+                #[cfg(feature = "serde")]
+                WindowListArgsOutputFormat::Json => "json",
+            }
+            .into(),
+        );
+        args
+    }
 }
 
 impl WindowListArgs {

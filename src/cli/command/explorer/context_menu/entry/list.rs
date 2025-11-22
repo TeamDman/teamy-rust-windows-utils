@@ -1,12 +1,34 @@
+use crate::cli::to_args::ToArgs;
 use crate::explorer::context_menu::get_context_menu_entries;
+use arbitrary::Arbitrary;
 use clap::Args;
 use eyre::Result;
+use std::ffi::OsString;
 use std::path::PathBuf;
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, PartialEq)]
 pub struct EntryListArgs {
     #[arg(long)]
     pub r#for: PathBuf,
+}
+
+impl<'a> Arbitrary<'a> for EntryListArgs {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let mut p = PathBuf::arbitrary(u)?;
+        if p.as_os_str().is_empty() {
+            p = PathBuf::from(".");
+        }
+        Ok(EntryListArgs { r#for: p })
+    }
+}
+
+impl ToArgs for EntryListArgs {
+    fn to_args(&self) -> Vec<OsString> {
+        let mut args = Vec::new();
+        args.push("--for".into());
+        args.push(self.r#for.clone().into());
+        args
+    }
 }
 
 impl EntryListArgs {

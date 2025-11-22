@@ -1,13 +1,7 @@
 fn main() -> eyre::Result<()> {
     #[cfg(feature = "cli")]
     {
-        use clap::Parser;
-        use teamy_windows::cli::Cli;
-
-        color_eyre::install()?;
-
-        let cli = Cli::parse();
-        cli.invoke()?;
+        teamy_windows::cli::main::cli_main()?;
     }
     #[cfg(not(feature = "cli"))]
     {
