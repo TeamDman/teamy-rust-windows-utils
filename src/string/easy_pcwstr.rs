@@ -1,7 +1,7 @@
 use crate::string::pcwstr_guard::PCWSTRGuard;
-use clap::builder::OsStr;
 use eyre::eyre;
 use std::convert::Infallible;
+use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
