@@ -1,4 +1,5 @@
 use crate::string::pcwstr_guard::PCWSTRGuard;
+use clap::builder::OsStr;
 use eyre::eyre;
 use std::convert::Infallible;
 use std::ffi::OsString;
@@ -30,31 +31,18 @@ impl EasyPCWSTR for &str {
     }
 }
 
-impl EasyPCWSTR for String {
-    type Error = eyre::Error;
-
-    fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
-        Ok(PCWSTRGuard::new(U16CString::from_str(&self).map_err(
-            |_| eyre!("Failed to convert `String` to U16CString: {}", self),
-        )?))
-    }
-}
-
-impl EasyPCWSTR for OsString {
+impl EasyPCWSTR for &OsString {
     type Error = eyre::Error;
 
     fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
         Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(&self)))
     }
 }
-
-impl EasyPCWSTR for PathBuf {
+impl EasyPCWSTR for &OsStr {
     type Error = eyre::Error;
 
     fn easy_pcwstr(self) -> eyre::Result<PCWSTRGuard, Self::Error> {
-        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(
-            self.as_os_str(),
-        )))
+        Ok(PCWSTRGuard::new(U16CString::from_os_str_truncate(&self)))
     }
 }
 

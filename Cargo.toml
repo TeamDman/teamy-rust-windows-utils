@@ -66,3 +66,5 @@ windows.workspace=true
 tracing-subscriber.workspace=true
 crossbeam-channel = "0.5.15"
 uom = { version = "0.37.0", features = ["usize"] } # "u64", "autoconvert", 
+clap = { version = "4.5", features = ["derive"] }
+color-eyre.workspace = true

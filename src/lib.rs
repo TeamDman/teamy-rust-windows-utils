@@ -11,3 +11,6 @@ pub mod event_loop;
 pub mod job;
 pub mod log;
 pub mod file;
+pub mod explorer;
+pub mod cli;
+pub mod com;
