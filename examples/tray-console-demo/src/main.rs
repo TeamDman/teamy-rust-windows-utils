@@ -4,6 +4,7 @@ use crate::window_proc::TrayConsoleConfig;
 use crate::window_proc::configure_tray_console;
 use crate::window_proc::window_proc;
 use color_eyre::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 use teamy_windows::console::hide_default_console_or_attach_ctrl_handler;
@@ -21,6 +22,8 @@ use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use windows::core::w;
+
+static HEARTBEAT_RUNNING: AtomicBool = AtomicBool::new(false);
 
 pub fn main() -> Result<()> {
     color_eyre::install()?;
@@ -48,7 +51,7 @@ pub fn main() -> Result<()> {
     info!("Tray console demo initialized");
     spawn_heartbeat_logger();
 
-    run_message_loop(Some(window))?;
+    run_message_loop(None)?;
 
     Ok(())
 }
@@ -86,8 +89,18 @@ fn init_tracing() {
 }
 
 fn spawn_heartbeat_logger() {
-    thread::spawn(|| loop {
-        info!("Ahoy! Heartbeat log from tray-console-demo");
-        thread::sleep(Duration::from_secs(1));
+    if HEARTBEAT_RUNNING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+
+    thread::spawn(|| {
+        while HEARTBEAT_RUNNING.load(Ordering::SeqCst) {
+            info!("Ahoy! Heartbeat log from tray-console-demo");
+            thread::sleep(Duration::from_secs(1));
+        }
     });
+}
+
+pub fn stop_heartbeat_logger() {
+    HEARTBEAT_RUNNING.store(false, Ordering::SeqCst);
 }

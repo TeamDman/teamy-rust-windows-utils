@@ -1,3 +1,4 @@
+use crate::stop_heartbeat_logger;
 use eyre::Context;
 use eyre::Result;
 use eyre::eyre;
@@ -275,6 +276,7 @@ pub unsafe extern "system" fn window_proc(
                 error!("Failed to delete tray icon: {error}");
             }
             drop_state(hwnd);
+            stop_heartbeat_logger();
             unsafe { PostQuitMessage(0) };
             LRESULT(0)
         }
