@@ -2012,6 +2012,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "tray-console-demo"
+version = "0.2.0"
+dependencies = [
+ "bevy_log",
+ "color-eyre",
+ "embed-resource",
+ "eyre",
+ "teamy-windows",
+ "tracing",
+ "tracing-subscriber",
+ "windows",
+]
+
+[[package]]
 name = "tray-demo"
 version = "0.2.0"
 dependencies = [
