@@ -73,15 +73,18 @@ pub fn watch_file_content(config: WatchConfig) -> eyre::Result<Receiver<Vec<u8>>
             let handle = unsafe { Owned::new(raw_handle) };
 
             // Determine starting position
-            let mut current_pos: i64 = 0;
-            match config.init_behaviour {
-                WatchInitBehaviour::ReadFromStart => {
-                    unsafe { SetFilePointerEx(*handle, 0, Some(&mut current_pos), FILE_BEGIN) }?
+            let _starting_pos: i64 = {
+                let mut pos: i64 = 0;
+                match config.init_behaviour {
+                    WatchInitBehaviour::ReadFromStart => unsafe {
+                        SetFilePointerEx(*handle, 0, Some(&mut pos), FILE_BEGIN)
+                    }?,
+                    WatchInitBehaviour::ReadFromEnd => {
+                        unsafe { SetFilePointerEx(*handle, 0, Some(&mut pos), FILE_END) }?
+                    }
                 }
-                WatchInitBehaviour::ReadFromEnd => {
-                    unsafe { SetFilePointerEx(*handle, 0, Some(&mut current_pos), FILE_END) }?
-                }
-            }
+                pos
+            };
 
             let mut buf = vec![0u8; config.read_chunk_size.get::<byte>()];
             loop {
@@ -97,30 +100,12 @@ pub fn watch_file_content(config: WatchConfig) -> eyre::Result<Receiver<Vec<u8>>
                     .wrap_err_with(|| format!("ReadFile error watching {}", path.display()))?
                 }
                 if bytes_read > 0 {
-                    current_pos += bytes_read as i64;
                     let chunk = buf[..bytes_read as usize].to_vec();
                     if tx.send(chunk).is_err() {
                         break;
                     }
                     continue; // attempt immediate next read (burst)
                 } else {
-                    // // No data; check for truncation
-                    // use windows::Win32::Storage::FileSystem::GetFileSizeEx;
-                    // let mut size: i64 = 0;
-                    // if let Err(e) = unsafe { GetFileSizeEx(*handle, &mut size) } {
-                    //     eprintln!("GetFileSizeEx error: {e:?}");
-                    //     break;
-                    // }
-                    // if size < current_pos {
-                    //     // truncated
-                    //     if let Err(e) = unsafe {
-                    //         SetFilePointerEx(*handle, 0, Some(&mut current_pos), FILE_BEGIN)
-                    //     } {
-                    //         eprintln!("Seek reset error: {e:?}");
-                    //         break;
-                    //     }
-                    //     current_pos = 0;
-                    // }
                     thread::sleep(Duration::from_millis(150));
                 }
             }
