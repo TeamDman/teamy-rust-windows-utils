@@ -19,12 +19,13 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }
 widestring = "1.2.0"
 chrono = "0.4"
 arbitrary = { version = "1.4.1", features = ["derive"] }
-windows = { version = "0.62.0", features = [
+windows = { version = "0.62.2", features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
     "Win32_Media_Audio",
     "Win32_Networking_WinSock",
     "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
     "Win32_NetworkManagement_WNet",
     "Win32_Security",
     "Win32_Storage_FileSystem",

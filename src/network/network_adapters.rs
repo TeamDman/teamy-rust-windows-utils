@@ -1,0 +1,165 @@
+use eyre::bail;
+use std::marker::PhantomData;
+use windows::Win32::Foundation::ERROR_ADDRESS_NOT_ASSOCIATED;
+use windows::Win32::Foundation::ERROR_BUFFER_OVERFLOW;
+use windows::Win32::Foundation::ERROR_INVALID_PARAMETER;
+use windows::Win32::Foundation::ERROR_NO_DATA;
+use windows::Win32::Foundation::ERROR_NOT_ENOUGH_MEMORY;
+use windows::Win32::Foundation::NO_ERROR;
+use windows::Win32::Foundation::WIN32_ERROR;
+use windows::Win32::NetworkManagement::IpHelper::GAA_FLAG_INCLUDE_ALL_INTERFACES;
+use windows::Win32::NetworkManagement::IpHelper::GetAdaptersAddresses;
+use windows::Win32::NetworkManagement::IpHelper::IP_ADAPTER_ADDRESSES_LH;
+use windows::Win32::Networking::WinSock::AF_UNSPEC;
+
+const WORKING_BUFFER_SIZE: usize = 15 * 1024;
+const MAX_RESIZE_ATTEMPTS: usize = 4;
+
+/// Owns the backing buffer returned by `GetAdaptersAddresses` so that the
+/// pointed-to fields inside each `IP_ADAPTER_ADDRESSES_LH` stay valid.
+#[derive(Default)]
+pub struct NetworkAdapters {
+    buffer: Vec<u8>,
+}
+impl core::fmt::Debug for NetworkAdapters {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NetworkAdapters")
+            .field("count", &self.iter().count())
+            .finish()
+    }
+}
+
+impl NetworkAdapters {
+    fn head_ptr(&self) -> *const IP_ADAPTER_ADDRESSES_LH {
+        if self.buffer.is_empty() {
+            std::ptr::null()
+        } else {
+            self.buffer.as_ptr() as *const IP_ADAPTER_ADDRESSES_LH
+        }
+    }
+
+    pub fn iter(&self) -> NetworkAdapterIter<'_> {
+        NetworkAdapterIter {
+            next: self.head_ptr(),
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
+    }
+}
+
+pub struct NetworkAdapterIter<'a> {
+    next: *const IP_ADAPTER_ADDRESSES_LH,
+    _marker: PhantomData<&'a IP_ADAPTER_ADDRESSES_LH>,
+}
+
+impl<'a> Iterator for NetworkAdapterIter<'a> {
+    type Item = &'a IP_ADAPTER_ADDRESSES_LH;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next.is_null() {
+            return None;
+        }
+
+        let current = self.next;
+        unsafe {
+            self.next = (*current).Next;
+            Some(&*current)
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a NetworkAdapters {
+    type Item = &'a IP_ADAPTER_ADDRESSES_LH;
+    type IntoIter = NetworkAdapterIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub fn list_network_adapters() -> eyre::Result<NetworkAdapters> {
+    let mut buffer = vec![0u8; WORKING_BUFFER_SIZE];
+    let mut attempts = 0usize;
+
+    loop {
+        let mut buffer_size = buffer.len() as u32;
+        let adapter_ptr = buffer.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
+
+        let status = unsafe {
+            GetAdaptersAddresses(
+                AF_UNSPEC.0 as u32,
+                GAA_FLAG_INCLUDE_ALL_INTERFACES,
+                None,
+                Some(&mut *adapter_ptr),
+                &mut buffer_size,
+            )
+        };
+
+        match WIN32_ERROR(status) {
+            ERROR_BUFFER_OVERFLOW => {
+                attempts += 1;
+                if attempts >= MAX_RESIZE_ATTEMPTS {
+                    bail!(
+                        "GetAdaptersAddresses kept requesting a larger buffer (required {buffer_size} bytes)"
+                    );
+                }
+                buffer.resize(buffer_size as usize, 0);
+                continue;
+            }
+            ERROR_NO_DATA => return Ok(NetworkAdapters::default()),
+            ERROR_ADDRESS_NOT_ASSOCIATED => {
+                bail!("No addresses have been associated with the requested adapters yet")
+            }
+            ERROR_INVALID_PARAMETER => bail!("Invalid parameter passed to GetAdaptersAddresses"),
+            ERROR_NOT_ENOUGH_MEMORY => bail!("Not enough memory to enumerate network adapters"),
+            NO_ERROR => {
+                let used = buffer_size as usize;
+                if used < buffer.len() {
+                    buffer.truncate(used);
+                }
+                return Ok(NetworkAdapters { buffer });
+            }
+            other => {
+                let message = other.to_hresult().message();
+                bail!("GetAdaptersAddresses failed: {message}");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::borrow::Cow;
+
+    #[test]
+    fn enumerates_adapters() -> eyre::Result<()> {
+        let adapters = super::list_network_adapters()?;
+        let count = adapters.iter().count();
+        let adapter_display = adapters
+            .into_iter()
+            .map(|adapter| {
+                let name = unsafe { adapter.FriendlyName.display() }.to_string();
+                (
+                    name,
+                    match adapter.OperStatus.0 {
+                        1 => Cow::Borrowed("Up"),
+                        2 => Cow::Borrowed("Down"),
+                        3 => Cow::Borrowed("Testing"),
+                        4 => Cow::Borrowed("Unknown"),
+                        5 => Cow::Borrowed("Dormant"),
+                        6 => Cow::Borrowed("NotPresent"),
+                        7 => Cow::Borrowed("LowerLayerDown"),
+                        x => Cow::Owned(format!("InvalidStatus: {x}")),
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        println!("Adapters: {:#?}", adapter_display);
+        println!("Enumerated {count} adapters");
+        assert!(count > 0, "expected at least one adapter");
+        Ok(())
+    }
+}

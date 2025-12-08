@@ -15,3 +15,4 @@ pub mod module;
 pub mod string;
 pub mod tray;
 pub mod window;
+pub mod network;
