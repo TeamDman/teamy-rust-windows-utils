@@ -80,7 +80,7 @@ impl<'a> IntoIterator for &'a NetworkAdapters {
     }
 }
 
-pub fn list_network_adapters() -> eyre::Result<NetworkAdapters> {
+pub fn get_network_adapters() -> eyre::Result<NetworkAdapters> {
     let mut buffer = vec![0u8; WORKING_BUFFER_SIZE];
     let mut attempts = 0usize;
 
@@ -136,7 +136,7 @@ mod test {
 
     #[test]
     fn enumerates_adapters() -> eyre::Result<()> {
-        let adapters = super::list_network_adapters()?;
+        let adapters = super::get_network_adapters()?;
         let count = adapters.iter().count();
         let adapter_display = adapters
             .into_iter()
