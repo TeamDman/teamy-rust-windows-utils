@@ -1,8 +1,7 @@
+use crate::cli::tracing::default_json_log_path;
 use std::borrow::Cow;
 use std::path::PathBuf;
 use std::str::FromStr;
-
-use crate::cli::tracing::default_json_log_path;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsonLogBehaviour {
@@ -19,9 +18,7 @@ impl JsonLogBehaviour {
         match self {
             JsonLogBehaviour::None => None,
             JsonLogBehaviour::Some(path) => Some(Cow::Borrowed(path)),
-            JsonLogBehaviour::SomeAutomaticPath => {
-                Some(Cow::Owned(default_json_log_path()))
-            }
+            JsonLogBehaviour::SomeAutomaticPath => Some(Cow::Owned(default_json_log_path())),
         }
     }
 }

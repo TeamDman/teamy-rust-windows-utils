@@ -1,3 +1,4 @@
+use crate::cli::json_log_behaviour::JsonLogBehaviour;
 use chrono::Local;
 use eyre::Result;
 use std::fs::File;
@@ -12,12 +13,7 @@ use tracing_subscriber::fmt::writer::BoxMakeWriter;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crate::cli::json_log_behaviour::JsonLogBehaviour;
-
-pub fn init_tracing(
-    level: impl Into<Directive>,
-    json_behaviour: JsonLogBehaviour,
-) -> Result<()> {
+pub fn init_tracing(level: impl Into<Directive>, json_behaviour: JsonLogBehaviour) -> Result<()> {
     let default_directive: Directive = level.into();
     let env_filter = EnvFilter::builder()
         .with_default_directive(default_directive.clone())
@@ -35,7 +31,7 @@ pub fn init_tracing(
         if let Some(parent) = json_log_path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        
+
         let file = File::create(json_log_path.as_ref())?;
         let file = Arc::new(Mutex::new(file));
         let json_writer = {

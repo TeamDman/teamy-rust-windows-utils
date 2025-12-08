@@ -4,12 +4,12 @@ use eyre::Result;
 use std::ffi::OsString;
 use to_args::ToArgs;
 
-pub mod tracing;
 pub mod command;
 pub mod global_args;
 pub mod json_log_behaviour;
-pub mod to_args;
 pub mod main;
+pub mod to_args;
+pub mod tracing;
 
 use global_args::GlobalArgs;
 

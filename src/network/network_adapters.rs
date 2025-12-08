@@ -30,6 +30,74 @@ impl core::fmt::Debug for NetworkAdapters {
 }
 
 impl NetworkAdapters {
+    /// Allocates the working buffer and immediately populates it with a
+    /// snapshot from `GetAdaptersAddresses`.
+    pub fn new() -> eyre::Result<Self> {
+        let mut adapters = Self::default();
+        adapters.refresh()?;
+        Ok(adapters)
+    }
+
+    /// Refreshes the adapter list in-place, reusing the existing allocation to
+    /// avoid churn when polling frequently.
+    pub fn refresh(&mut self) -> eyre::Result<()> {
+        if self.buffer.is_empty() {
+            self.buffer.resize(WORKING_BUFFER_SIZE, 0);
+        }
+
+        let mut attempts = 0usize;
+
+        loop {
+            let mut buffer_size = self.buffer.len() as u32;
+            let adapter_ptr = self.buffer.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
+
+            let status = unsafe {
+                GetAdaptersAddresses(
+                    AF_UNSPEC.0 as u32,
+                    GAA_FLAG_INCLUDE_ALL_INTERFACES,
+                    None,
+                    Some(&mut *adapter_ptr),
+                    &mut buffer_size,
+                )
+            };
+
+            match WIN32_ERROR(status) {
+                ERROR_BUFFER_OVERFLOW => {
+                    attempts += 1;
+                    if attempts >= MAX_RESIZE_ATTEMPTS {
+                        bail!(
+                            "GetAdaptersAddresses kept requesting a larger buffer (required {buffer_size} bytes)"
+                        );
+                    }
+                    self.buffer.resize(buffer_size as usize, 0);
+                    continue;
+                }
+                ERROR_NO_DATA => {
+                    self.buffer.clear();
+                    return Ok(());
+                }
+                ERROR_ADDRESS_NOT_ASSOCIATED => {
+                    bail!("No addresses have been associated with the requested adapters yet")
+                }
+                ERROR_INVALID_PARAMETER => {
+                    bail!("Invalid parameter passed to GetAdaptersAddresses")
+                }
+                ERROR_NOT_ENOUGH_MEMORY => {
+                    bail!("Not enough memory to enumerate network adapters")
+                }
+                NO_ERROR => {
+                    let used = buffer_size as usize;
+                    self.buffer.truncate(used);
+                    return Ok(());
+                }
+                other => {
+                    let message = other.to_hresult().message();
+                    bail!("GetAdaptersAddresses failed: {message}");
+                }
+            }
+        }
+    }
+
     fn head_ptr(&self) -> *const IP_ADAPTER_ADDRESSES_LH {
         if self.buffer.is_empty() {
             std::ptr::null()
@@ -80,70 +148,21 @@ impl<'a> IntoIterator for &'a NetworkAdapters {
     }
 }
 
-pub fn get_network_adapters() -> eyre::Result<NetworkAdapters> {
-    let mut buffer = vec![0u8; WORKING_BUFFER_SIZE];
-    let mut attempts = 0usize;
-
-    loop {
-        let mut buffer_size = buffer.len() as u32;
-        let adapter_ptr = buffer.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
-
-        let status = unsafe {
-            GetAdaptersAddresses(
-                AF_UNSPEC.0 as u32,
-                GAA_FLAG_INCLUDE_ALL_INTERFACES,
-                None,
-                Some(&mut *adapter_ptr),
-                &mut buffer_size,
-            )
-        };
-
-        match WIN32_ERROR(status) {
-            ERROR_BUFFER_OVERFLOW => {
-                attempts += 1;
-                if attempts >= MAX_RESIZE_ATTEMPTS {
-                    bail!(
-                        "GetAdaptersAddresses kept requesting a larger buffer (required {buffer_size} bytes)"
-                    );
-                }
-                buffer.resize(buffer_size as usize, 0);
-                continue;
-            }
-            ERROR_NO_DATA => return Ok(NetworkAdapters::default()),
-            ERROR_ADDRESS_NOT_ASSOCIATED => {
-                bail!("No addresses have been associated with the requested adapters yet")
-            }
-            ERROR_INVALID_PARAMETER => bail!("Invalid parameter passed to GetAdaptersAddresses"),
-            ERROR_NOT_ENOUGH_MEMORY => bail!("Not enough memory to enumerate network adapters"),
-            NO_ERROR => {
-                let used = buffer_size as usize;
-                if used < buffer.len() {
-                    buffer.truncate(used);
-                }
-                return Ok(NetworkAdapters { buffer });
-            }
-            other => {
-                let message = other.to_hresult().message();
-                bail!("GetAdaptersAddresses failed: {message}");
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
+    use crate::network::NetworkAdapterExtensions;
     use std::borrow::Cow;
 
     #[test]
     fn enumerates_adapters() -> eyre::Result<()> {
-        let adapters = super::get_network_adapters()?;
+        let mut adapters = super::NetworkAdapters::new()?;
         let count = adapters.iter().count();
         let adapter_display = adapters
-            .into_iter()
+            .iter()
             .map(|adapter| {
-                let name = unsafe { adapter.FriendlyName.display() }.to_string();
                 (
-                    name,
+                    adapter.display_name(),
+                    unsafe { adapter.AdapterName.display() }.to_string(),
                     match adapter.OperStatus.0 {
                         1 => Cow::Borrowed("Up"),
                         2 => Cow::Borrowed("Down"),
@@ -160,6 +179,7 @@ mod test {
         println!("Adapters: {:#?}", adapter_display);
         println!("Enumerated {count} adapters");
         assert!(count > 0, "expected at least one adapter");
+        adapters.refresh()?;
         Ok(())
     }
 }

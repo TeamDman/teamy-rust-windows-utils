@@ -12,7 +12,7 @@ pub mod invocation;
 pub mod job;
 pub mod log;
 pub mod module;
+pub mod network;
 pub mod string;
 pub mod tray;
 pub mod window;
-pub mod network;

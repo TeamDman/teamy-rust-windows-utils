@@ -2,7 +2,8 @@ use crate::cli::to_args::ToArgs;
 use crate::window::WindowInfo;
 use crate::window::enumerate_windows;
 use arbitrary::Arbitrary;
-use clap::{Args, ValueEnum};
+use clap::Args;
+use clap::ValueEnum;
 use cloud_terrastodon_user_input::Choice;
 use cloud_terrastodon_user_input::PickerTui;
 use eyre::Result;
@@ -60,7 +61,6 @@ impl WindowPickArgs {
                 key: format!("{} - {}", window.title, window.exe_path),
                 value: window,
             }));
-
 
         if self.many {
             let selected_windows = picker.pick_many()?;

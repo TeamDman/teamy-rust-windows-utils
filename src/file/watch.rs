@@ -76,9 +76,9 @@ pub fn watch_file_content(config: WatchConfig) -> eyre::Result<Receiver<Vec<u8>>
             let _starting_pos: i64 = {
                 let mut pos: i64 = 0;
                 match config.init_behaviour {
-                    WatchInitBehaviour::ReadFromStart => unsafe {
-                        SetFilePointerEx(*handle, 0, Some(&mut pos), FILE_BEGIN)
-                    }?,
+                    WatchInitBehaviour::ReadFromStart => {
+                        unsafe { SetFilePointerEx(*handle, 0, Some(&mut pos), FILE_BEGIN) }?
+                    }
                     WatchInitBehaviour::ReadFromEnd => {
                         unsafe { SetFilePointerEx(*handle, 0, Some(&mut pos), FILE_END) }?
                     }

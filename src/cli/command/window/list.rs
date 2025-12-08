@@ -1,7 +1,8 @@
 use crate::cli::to_args::ToArgs;
 use crate::window::enumerate_windows;
 use arbitrary::Arbitrary;
-use clap::{Args, ValueEnum};
+use clap::Args;
+use clap::ValueEnum;
 use eyre::Result;
 use std::ffi::OsString;
 
