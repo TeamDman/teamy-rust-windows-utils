@@ -116,6 +116,10 @@ impl NetworkAdapters {
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()
     }
+
+    pub fn len(&self) -> usize {
+        self.iter().count()
+    }
 }
 
 pub struct NetworkAdapterIter<'a> {
@@ -150,8 +154,8 @@ impl<'a> IntoIterator for &'a NetworkAdapters {
 
 #[cfg(test)]
 mod test {
-    use crate::network::NetworkAdapterExtensions;
-    use std::borrow::Cow;
+    use crate::network::NetworkAdapterExt;
+    use crate::network::OperStatusExt;
 
     #[test]
     fn enumerates_adapters() -> eyre::Result<()> {
@@ -163,16 +167,7 @@ mod test {
                 (
                     adapter.display_name(),
                     unsafe { adapter.AdapterName.display() }.to_string(),
-                    match adapter.OperStatus.0 {
-                        1 => Cow::Borrowed("Up"),
-                        2 => Cow::Borrowed("Down"),
-                        3 => Cow::Borrowed("Testing"),
-                        4 => Cow::Borrowed("Unknown"),
-                        5 => Cow::Borrowed("Dormant"),
-                        6 => Cow::Borrowed("NotPresent"),
-                        7 => Cow::Borrowed("LowerLayerDown"),
-                        x => Cow::Owned(format!("InvalidStatus: {x}")),
-                    },
+                    adapter.peOperStatus.display()
                 )
             })
             .collect::<Vec<_>>();

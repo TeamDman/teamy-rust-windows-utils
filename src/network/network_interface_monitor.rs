@@ -58,7 +58,7 @@ impl NetworkInterfaceMonitor {
 #[cfg(test)]
 mod tests {
     use super::super::NetworkAdapters;
-    use crate::network::NetworkAdapterExtensions;
+    use crate::network::NetworkAdapterExt;
 
     #[test]
     fn monitor_tracks_single_interface() -> eyre::Result<()> {

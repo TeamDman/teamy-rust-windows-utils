@@ -3,12 +3,12 @@ use crate::network::NetworkInterfaceMonitor;
 use std::borrow::Cow;
 use windows::Win32::NetworkManagement::IpHelper::IP_ADAPTER_ADDRESSES_LH;
 
-pub trait NetworkAdapterExtensions {
+pub trait NetworkAdapterExt {
     fn id(&self) -> NetworkInterfaceId;
     fn monitor(&self) -> eyre::Result<NetworkInterfaceMonitor>;
     fn display_name(&self) -> Cow<'_, str>;
 }
-impl NetworkAdapterExtensions for IP_ADAPTER_ADDRESSES_LH {
+impl NetworkAdapterExt for IP_ADAPTER_ADDRESSES_LH {
     fn id(&self) -> NetworkInterfaceId {
         NetworkInterfaceId::from(self)
     }
