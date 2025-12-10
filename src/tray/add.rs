@@ -8,7 +8,7 @@ use windows::core::PCWSTR;
 use windows::core::Param;
 use windows::core::ParamValue;
 
-/// https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-user
+/// <https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-user>
 pub const WM_USER_TRAY_CALLBACK: u32 = WM_USER + 1;
 pub const TRAY_ICON_ID: u32 = 1;
 
