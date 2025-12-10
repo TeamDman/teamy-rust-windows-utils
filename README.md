@@ -13,6 +13,7 @@ Visit https://microsoft.github.io/windows-rs/features/ to search for the feature
 
 Also check out https://github.com/teamdman/windows-features which is a tool I made to scan code and attempt to identify the features being used. This is useful when AI has outputted a bunch of Windows code which may rely on features you haven't enabled yet.
 
+Also check out the windows-rs documentation: https://microsoft.github.io/windows-docs-rs/doc/windows
 ## Demos
 
 ```
