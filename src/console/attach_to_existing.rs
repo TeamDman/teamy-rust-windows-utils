@@ -17,21 +17,15 @@ pub fn console_attach(pid: u32) -> eyre::Result<()> {
         eprintln!("Reusing console with PID: {pid}");
     }
 
-    unsafe {
-        // Detach from (non-existent) default console just in case
-        let _ = console_detach();
+    let _ = console_detach();
 
-        // Try to attach to the parent console
-        AttachConsole(pid)
-            .wrap_err_with(|| format!("Failed to attach to console with PID {pid}."))?;
+    unsafe { AttachConsole(pid) }
+        .wrap_err_with(|| format!("Failed to attach to console with PID {pid}."))?;
 
-        // Ensure std handles are bound to the console (reusing shared helper)
-        rebind_std_handles_to_console()?;
+    rebind_std_handles_to_console()?;
 
-        // Enable ANSI support (continue on error)
-        if let Err(e) = enable_ansi_support() {
-            warn!("Failed to enable ANSI support: {:?}", e);
-        }
+    if let Err(e) = enable_ansi_support() {
+        warn!("Failed to enable ANSI support: {:?}", e);
     }
 
     if pid == ATTACH_PARENT_PROCESS {

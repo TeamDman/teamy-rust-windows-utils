@@ -24,10 +24,7 @@ impl<'a> Arbitrary<'a> for EntryListArgs {
 
 impl ToArgs for EntryListArgs {
     fn to_args(&self) -> Vec<OsString> {
-        let mut args = Vec::new();
-        args.push("--for".into());
-        args.push(self.r#for.clone().into());
-        args
+        vec!["--for".into(), self.r#for.clone().into()]
     }
 }
 
@@ -38,10 +35,8 @@ impl EntryListArgs {
 
         println!("Inspecting context menu for: {}", path_str);
 
-        unsafe {
-            let entries = get_context_menu_entries(&path)?;
-            print_entries(&entries, 0);
-        }
+        let entries = unsafe { get_context_menu_entries(&path)? };
+        print_entries(&entries, 0);
 
         Ok(())
     }

@@ -12,18 +12,14 @@ use windows::core::Param;
 pub fn get_icon_from_current_module(
     icon_name: impl Param<PCWSTR> + std::fmt::Debug,
 ) -> eyre::Result<HICON> {
-    unsafe {
-        let handle = get_current_module()?;
-        debug!(?handle, "Trying to load embedded icon from current module");
-        let icon = LoadIconW(Some(HINSTANCE(handle.0)), icon_name);
-        match icon {
-            Ok(icon) => {
-                debug!("Successfully loaded embedded icon from current module");
-                Ok(icon)
-            }
-            Err(e) => {
-                bail!("Failed to load embedded icon from current module: {}", e);
-            }
+    let handle = get_current_module()?;
+    debug!(?handle, "Trying to load embedded icon from current module");
+    let icon = unsafe { LoadIconW(Some(HINSTANCE(handle.0)), icon_name) };
+    match icon {
+        Ok(icon) => {
+            debug!("Successfully loaded embedded icon from current module");
+            Ok(icon)
         }
+        Err(e) => bail!("Failed to load embedded icon from current module: {}", e),
     }
 }

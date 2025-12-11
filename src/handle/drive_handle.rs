@@ -12,7 +12,7 @@ use windows::core::Owned;
 
 pub fn get_read_only_drive_handle(drive_letter: char) -> eyre::Result<Owned<HANDLE>> {
     let drive_path = format!("\\\\.\\{drive_letter}:");
-    let handle = unsafe {
+    let raw_handle = unsafe {
         CreateFileW(
             drive_path.easy_pcwstr()?.as_ref(),
             FILE_GENERIC_READ.0,
@@ -24,10 +24,10 @@ pub fn get_read_only_drive_handle(drive_letter: char) -> eyre::Result<Owned<HAND
             FILE_ATTRIBUTE_NORMAL,
             None,
         )
-        .wrap_err(format!(
-            "Failed to open volume handle for {drive_letter:?}, did you forget to elevate?"
-        ))?
     };
+    let handle = raw_handle.wrap_err(format!(
+        "Failed to open volume handle for {drive_letter:?}, did you forget to elevate?"
+    ))?;
 
     Ok(unsafe { Owned::new(handle) })
 }

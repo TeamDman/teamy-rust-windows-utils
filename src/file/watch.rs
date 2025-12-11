@@ -67,8 +67,9 @@ pub fn watch_file_content(config: WatchConfig) -> eyre::Result<Receiver<Vec<u8>>
                     FILE_ATTRIBUTE_NORMAL,
                     None,
                 )
-            }
-            .with_context(|| format!("Failed to open file for watching: {}", path.display()))?;
+            };
+            let raw_handle = raw_handle
+                .with_context(|| format!("Failed to open file for watching: {}", path.display()))?;
 
             let handle = unsafe { Owned::new(raw_handle) };
 
@@ -90,15 +91,15 @@ pub fn watch_file_content(config: WatchConfig) -> eyre::Result<Receiver<Vec<u8>>
             loop {
                 // Attempt read
                 let mut bytes_read: u32 = 0;
-                unsafe {
+                let read_res = unsafe {
                     ReadFile(
                         *handle,
                         Some(buf.as_mut_slice()),
                         Some(&mut bytes_read),
                         None,
                     )
-                    .wrap_err_with(|| format!("ReadFile error watching {}", path.display()))?
-                }
+                };
+                read_res.wrap_err_with(|| format!("ReadFile error watching {}", path.display()))?;
                 if bytes_read > 0 {
                     let chunk = buf[..bytes_read as usize].to_vec();
                     if tx.send(chunk).is_err() {

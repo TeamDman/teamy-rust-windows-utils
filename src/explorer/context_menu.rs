@@ -190,11 +190,9 @@ mod test {
     #[test]
     fn it_works() -> eyre::Result<()> {
         let path = file!();
-        unsafe {
-            let entries = super::get_context_menu_entries(path)?;
-            for entry in entries {
-                println!("{:?}", entry);
-            }
+        let entries = unsafe { super::get_context_menu_entries(path)? };
+        for entry in entries {
+            println!("{:?}", entry);
         }
         Ok(())
     }

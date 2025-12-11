@@ -6,11 +6,9 @@ use windows::Win32::UI::WindowsAndMessaging::ShowWindow;
 
 pub fn focus_window(hwnd: isize) -> eyre::Result<()> {
     let hwnd = HWND(hwnd as _);
-    unsafe {
-        if IsIconic(hwnd).as_bool() {
-            let _ = ShowWindow(hwnd, SW_RESTORE);
-        }
-        let _ = SetForegroundWindow(hwnd);
+    if unsafe { IsIconic(hwnd).as_bool() } {
+        let _ = unsafe { ShowWindow(hwnd, SW_RESTORE) };
     }
+    let _ = unsafe { SetForegroundWindow(hwnd) };
     Ok(())
 }

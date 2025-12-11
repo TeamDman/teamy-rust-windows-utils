@@ -51,12 +51,13 @@ impl NetworkAdapters {
             let mut buffer_size = self.buffer.len() as u32;
             let adapter_ptr = self.buffer.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
 
+            let adapter_ptr_mut = unsafe { &mut *adapter_ptr };
             let status = unsafe {
                 GetAdaptersAddresses(
                     AF_UNSPEC.0 as u32,
                     GAA_FLAG_INCLUDE_ALL_INTERFACES,
                     None,
-                    Some(&mut *adapter_ptr),
+                    Some(adapter_ptr_mut),
                     &mut buffer_size,
                 )
             };
@@ -136,10 +137,10 @@ impl<'a> Iterator for NetworkAdapterIter<'a> {
         }
 
         let current = self.next;
-        unsafe {
-            self.next = (*current).Next;
-            Some(&*current)
-        }
+        let next_ptr = unsafe { (*current).Next };
+        self.next = next_ptr;
+        let item = unsafe { &*current };
+        Some(item)
     }
 }
 
