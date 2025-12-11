@@ -167,7 +167,7 @@ mod test {
                 (
                     adapter.display_name(),
                     unsafe { adapter.AdapterName.display() }.to_string(),
-                    adapter.peOperStatus.display()
+                    adapter.peOperStatus.display(),
                 )
             })
             .collect::<Vec<_>>();
