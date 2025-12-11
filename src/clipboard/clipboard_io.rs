@@ -38,11 +38,12 @@ pub fn read_clipboard() -> Result<String> {
     }
 }
 
-pub fn write_clipboard(value: impl Into<U16CString>) -> Result<()> {
+pub fn write_clipboard(value: impl AsRef<str>) -> Result<()> {
     let _guard = ClipboardGuard::open().wrap_err("Failed to open clipboard")?;
     unsafe { EmptyClipboard().wrap_err("Failed to empty clipboard")? };
 
-    let wide = value.into();
+    let wide =
+        U16CString::from_str(value.as_ref()).wrap_err("Failed to convert string to UTF-16")?;
     let slice = wide.as_slice_with_nul();
     let size = std::mem::size_of_val(slice);
     let handle = unsafe { GlobalAlloc(GMEM_MOVEABLE, size) }
