@@ -1,43 +1,31 @@
 use crate::cli::to_args::ToArgs;
+use crate::clipboard::ClipboardFormatExt;
+use crate::clipboard::ClipboardGuard;
 use arbitrary::Arbitrary;
 use clap::Args;
 use eyre::Context;
 use eyre::Result;
+use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::ffi::OsString;
 use std::os::raw::c_char;
 use std::os::windows::ffi::OsStringExt;
-use widestring::WideCStr;
+use widestring::U16CStr;
 use windows::Win32::Foundation::ERROR_SUCCESS;
 use windows::Win32::Foundation::GetLastError;
 use windows::Win32::Foundation::HGLOBAL;
 use windows::Win32::Foundation::MAX_PATH;
-use windows::Win32::System::DataExchange::CloseClipboard;
 use windows::Win32::System::DataExchange::EnumClipboardFormats;
 use windows::Win32::System::DataExchange::GetClipboardData;
-use windows::Win32::System::DataExchange::GetClipboardFormatNameW;
 use windows::Win32::System::DataExchange::IsClipboardFormatAvailable;
-use windows::Win32::System::DataExchange::OpenClipboard;
 use windows::Win32::System::Memory::GlobalLock;
 use windows::Win32::System::Memory::GlobalSize;
 use windows::Win32::System::Memory::GlobalUnlock;
-use windows::Win32::System::Ole::CF_BITMAP;
-use windows::Win32::System::Ole::CF_DIB;
-use windows::Win32::System::Ole::CF_DIBV5;
-use windows::Win32::System::Ole::CF_DIF;
-use windows::Win32::System::Ole::CF_ENHMETAFILE;
 use windows::Win32::System::Ole::CF_HDROP;
-use windows::Win32::System::Ole::CF_LOCALE;
-use windows::Win32::System::Ole::CF_METAFILEPICT;
 use windows::Win32::System::Ole::CF_OEMTEXT;
-use windows::Win32::System::Ole::CF_PALETTE;
-use windows::Win32::System::Ole::CF_PENDATA;
-use windows::Win32::System::Ole::CF_RIFF;
-use windows::Win32::System::Ole::CF_SYLK;
 use windows::Win32::System::Ole::CF_TEXT;
-use windows::Win32::System::Ole::CF_TIFF;
 use windows::Win32::System::Ole::CF_UNICODETEXT;
-use windows::Win32::System::Ole::CF_WAVE;
+use windows::Win32::System::Ole::CLIPBOARD_FORMAT;
 use windows::Win32::UI::Shell::DragQueryFileW;
 use windows::Win32::UI::Shell::HDROP;
 
@@ -63,6 +51,7 @@ pub fn describe_clipboard_contents() -> Result<String> {
 
     let mut description = String::new();
 
+    // If the clipboard currently contains drag-and-drop data, list the file paths.
     if unsafe { IsClipboardFormatAvailable(CF_HDROP.0 as u32).is_ok() } {
         let file_data = unsafe { GetClipboardData(CF_HDROP.0 as u32)? };
         if !file_data.is_invalid() {
@@ -93,14 +82,19 @@ pub fn describe_clipboard_contents() -> Result<String> {
         }
 
         format = next_format;
-        let format_name = get_clipboard_format_name(format)?;
-        description.push_str(&format!("\nFormat: {} (0x{:X})\n", format_name, format));
+        let format_name = CLIPBOARD_FORMAT(u16::try_from(format)?);
+        description.push_str(&format!(
+            "\nFormat: {} (0x{:X})\n",
+            format_name.display(),
+            format
+        ));
 
         let data_handle = unsafe { GetClipboardData(format)? };
         if data_handle.is_invalid() {
             continue;
         }
 
+        // Wrap the raw clipboard handle so GlobalLock/GlobalSize can operate on it.
         let hglobal = HGLOBAL(data_handle.0);
 
         let content = match format {
@@ -108,6 +102,7 @@ pub fn describe_clipboard_contents() -> Result<String> {
             x if x == CF_OEMTEXT.0 as u32 => read_clipboard_ascii(hglobal),
             x if x == CF_UNICODETEXT.0 as u32 => read_clipboard_unicode(hglobal),
             _ => {
+                // Fallback for unknown formats: report the raw buffer length.
                 let size = unsafe { GlobalSize(hglobal) } as usize;
                 format!("[Binary data, {} bytes]", size)
             }
@@ -119,22 +114,8 @@ pub fn describe_clipboard_contents() -> Result<String> {
     Ok(description)
 }
 
-struct ClipboardGuard;
-
-impl ClipboardGuard {
-    fn open() -> Result<Self> {
-        unsafe { OpenClipboard(None) }.wrap_err("Failed to open clipboard")?;
-        Ok(Self)
-    }
-}
-
-impl Drop for ClipboardGuard {
-    fn drop(&mut self) {
-        let _ = unsafe { CloseClipboard() };
-    }
-}
-
 fn read_clipboard_ascii(handle: HGLOBAL) -> String {
+    // Lock the global handle so we can read the raw bytes safely.
     let lock = unsafe { GlobalLock(handle) };
     if lock.is_null() {
         return "[Failed to lock clipboard data]".into();
@@ -148,53 +129,17 @@ fn read_clipboard_ascii(handle: HGLOBAL) -> String {
 }
 
 fn read_clipboard_unicode(handle: HGLOBAL) -> String {
+    // Lock the clipboard handle and interpret it as UTF-16 data.
     let lock = unsafe { GlobalLock(handle) };
     if lock.is_null() {
         return "[Failed to lock clipboard data]".into();
     }
 
     let data_ptr = lock as *const u16;
-    let wide_cstr = unsafe { WideCStr::from_ptr_str(data_ptr) };
+    let wide_cstr = unsafe { U16CStr::from_ptr_str(data_ptr) };
     let result = wide_cstr.to_string_lossy().to_string();
     let _ = unsafe { GlobalUnlock(handle) };
     result
-}
-fn get_clipboard_format_name(format: u32) -> Result<String> {
-    let mut buffer = vec![0u16; 256];
-    let len = unsafe { GetClipboardFormatNameW(format, buffer.as_mut_slice()) };
-    if len > 0 {
-        return Ok(OsString::from_wide(&buffer[..len as usize])
-            .to_string_lossy()
-            .to_string());
-    }
-
-    let known = match format {
-        x if x == CF_TEXT.0 as u32 => "CF_TEXT",
-        x if x == CF_BITMAP.0 as u32 => "CF_BITMAP",
-        x if x == CF_METAFILEPICT.0 as u32 => "CF_METAFILEPICT",
-        x if x == CF_SYLK.0 as u32 => "CF_SYLK",
-        x if x == CF_DIF.0 as u32 => "CF_DIF",
-        x if x == CF_TIFF.0 as u32 => "CF_TIFF",
-        x if x == CF_OEMTEXT.0 as u32 => "CF_OEMTEXT",
-        x if x == CF_DIB.0 as u32 => "CF_DIB",
-        x if x == CF_PALETTE.0 as u32 => "CF_PALETTE",
-        x if x == CF_PENDATA.0 as u32 => "CF_PENDATA",
-        x if x == CF_RIFF.0 as u32 => "CF_RIFF",
-        x if x == CF_WAVE.0 as u32 => "CF_WAVE",
-        x if x == CF_UNICODETEXT.0 as u32 => "CF_UNICODETEXT",
-        x if x == CF_ENHMETAFILE.0 as u32 => "CF_ENHMETAFILE",
-        x if x == CF_HDROP.0 as u32 => "CF_HDROP",
-        x if x == CF_LOCALE.0 as u32 => "CF_LOCALE",
-        x if x == CF_DIBV5.0 as u32 => "CF_DIBV5",
-        _ => {
-            return Err(eyre::eyre!(
-                "Failed to get clipboard format name for {}",
-                format
-            ));
-        }
-    };
-
-    Ok(known.to_string())
 }
 
 #[cfg(test)]

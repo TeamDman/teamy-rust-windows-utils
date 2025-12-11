@@ -1,5 +1,6 @@
 #[cfg(feature = "cli")]
 pub mod cli;
+pub mod clipboard;
 pub mod com;
 pub mod console;
 pub mod elevation;

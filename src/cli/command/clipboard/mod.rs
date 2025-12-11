@@ -5,6 +5,7 @@ use clap::Subcommand;
 use eyre::Result;
 use std::ffi::OsString;
 
+pub mod set;
 pub mod show;
 
 #[derive(Args, Debug, Arbitrary, PartialEq)]
@@ -28,6 +29,7 @@ impl ClipboardArgs {
 #[derive(Subcommand, Debug, Arbitrary, PartialEq)]
 pub enum ClipboardCommand {
     Show(show::ClipboardShowArgs),
+    Set(set::ClipboardSetArgs),
 }
 
 impl ToArgs for ClipboardCommand {
@@ -35,6 +37,11 @@ impl ToArgs for ClipboardCommand {
         match self {
             ClipboardCommand::Show(args) => {
                 let mut ret = vec!["show".into()];
+                ret.extend(args.to_args());
+                ret
+            }
+            ClipboardCommand::Set(args) => {
+                let mut ret = vec!["set".into()];
                 ret.extend(args.to_args());
                 ret
             }
@@ -46,6 +53,7 @@ impl ClipboardCommand {
     pub fn invoke(self) -> Result<()> {
         match self {
             ClipboardCommand::Show(args) => args.invoke(),
+            ClipboardCommand::Set(args) => args.invoke(),
         }
     }
 }
