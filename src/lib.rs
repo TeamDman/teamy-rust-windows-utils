@@ -17,3 +17,6 @@ pub mod shell;
 pub mod string;
 pub mod tray;
 pub mod window;
+
+// Re-export dunce for path normalization
+pub use dunce;
