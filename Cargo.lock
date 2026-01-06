@@ -807,6 +807,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "117240f60069e65410b3ae1bb213295bd828f707b5bec6596a1afc8793ce0cbc"
 
 [[package]]
+name = "dunce"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1770,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "teamy-windows"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "arbitrary",
  "chrono",
@@ -1778,6 +1784,7 @@ dependencies = [
  "cloud_terrastodon_user_input",
  "color-eyre",
  "crossbeam-channel",
+ "dunce",
  "eyre",
  "serde",
  "serde_json",
@@ -2013,7 +2020,7 @@ dependencies = [
 
 [[package]]
 name = "tray-console-demo"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bevy_log",
  "color-eyre",
@@ -2027,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "tray-demo"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bevy_log",
  "color-eyre",
