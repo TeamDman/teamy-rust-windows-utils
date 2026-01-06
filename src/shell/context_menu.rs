@@ -1,4 +1,5 @@
 use crate::com::com_guard::ComGuard;
+use crate::shell::path_extensions::PathExtensions;
 use crate::string::EasyPCWSTR;
 use eyre::Result;
 use eyre::bail;
@@ -23,11 +24,8 @@ pub struct ContextMenuEntry {
 ///
 /// This function calls unsafe Windows APIs.
 pub unsafe fn get_context_menu_entries(path: impl AsRef<Path>) -> Result<Vec<ContextMenuEntry>> {
-    // Canonicalize path.
-    let path = path.as_ref().canonicalize()?;
-    let path_str = path.to_string_lossy();
-    // SHParseDisplayName doesn't always like the verbatim prefix \\?\
-    let path_str = path_str.trim_start_matches(r"\\?\");
+    // Canonicalize path, SHParseDisplayName doesn't always like the verbatim prefix \\?\
+    let path = path.as_ref().unc_canonicalize()?;
 
     // 1. Initialize COM (Required for Shell Extensions)
     // We use a guard to ensure we uninitialize if we were the ones (or the refcount) that initialized it.
@@ -42,7 +40,7 @@ pub unsafe fn get_context_menu_entries(path: impl AsRef<Path>) -> Result<Vec<Con
     // We ensure the path is absolute before calling this.
     unsafe {
         SHParseDisplayName(
-            path_str.easy_pcwstr()?.as_ref(),
+            path.easy_pcwstr()?.as_ref(),
             None,
             &mut pidl,
             0,

@@ -1,5 +1,6 @@
 use crate::cli::to_args::ToArgs;
 use crate::shell::context_menu::get_context_menu_entries;
+use crate::shell::path_extensions::PathExtensions;
 use arbitrary::Arbitrary;
 use clap::Args;
 use eyre::Result;
@@ -30,10 +31,8 @@ impl ToArgs for EntryListArgs {
 
 impl EntryListArgs {
     pub fn invoke(self) -> Result<()> {
-        let path = self.r#for.canonicalize()?;
-        let path_str = path.to_string_lossy();
-
-        println!("Inspecting context menu for: {}", path_str);
+        let path = self.r#for.unc_canonicalize()?;
+        println!("Inspecting context menu for: {}", path.display());
 
         let entries = unsafe { get_context_menu_entries(&path)? };
         print_entries(&entries, 0);
