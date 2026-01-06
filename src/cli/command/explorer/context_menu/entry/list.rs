@@ -1,5 +1,5 @@
 use crate::cli::to_args::ToArgs;
-use crate::explorer::context_menu::get_context_menu_entries;
+use crate::shell::context_menu::get_context_menu_entries;
 use arbitrary::Arbitrary;
 use clap::Args;
 use eyre::Result;
@@ -42,7 +42,7 @@ impl EntryListArgs {
     }
 }
 
-fn print_entries(entries: &[crate::explorer::context_menu::ContextMenuEntry], depth: usize) {
+fn print_entries(entries: &[crate::shell::context_menu::ContextMenuEntry], depth: usize) {
     let indent = "  ".repeat(depth);
     for entry in entries {
         if entry.is_separator {
