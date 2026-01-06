@@ -1,7 +1,6 @@
+use crate::shell::pidl::Pidl;
 use std::path::Path;
 use std::path::PathBuf;
-
-use crate::shell::pidl::Pidl;
 
 pub trait PathExtensions {
     fn unc_canonicalize(&self) -> eyre::Result<PathBuf> {
