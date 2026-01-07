@@ -13,11 +13,7 @@ use windows::Win32::UI::Shell::SHOpenFolderAndSelectItems;
 /// an Explorer window is opened with those items selected.
 ///
 /// See: <https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shopenfolderandselectitems>
-pub fn open_folder_and_select_items<I, P>(paths: I) -> eyre::Result<()>
-where
-    I: IntoIterator<Item = P>,
-    P: AsRef<Path>,
-{
+pub fn open_folder_and_select_items<P: AsRef<Path>>(paths: &[P]) -> eyre::Result<()> {
     // Ensure COM is initialized
     let _com_guard = ComGuard::new()?;
 
@@ -78,7 +74,14 @@ mod test {
     #[test]
     fn single_file() -> eyre::Result<()> {
         let path = file!();
-        open_folder_and_select_items([path])?;
+        open_folder_and_select_items(&[path])?;
+        Ok(())
+    }
+
+    #[test]
+    fn single_pathbuf() -> eyre::Result<()> {
+        let path = PathBuf::from(file!());
+        open_folder_and_select_items(&[path])?;
         Ok(())
     }
 
@@ -86,7 +89,7 @@ mod test {
     fn multiple_files_same_folder() -> eyre::Result<()> {
         // Select multiple files in the shell folder
         let paths = ["src/shell/select.rs", "src/shell/pidl.rs"];
-        open_folder_and_select_items(paths)?;
+        open_folder_and_select_items(&paths)?;
         Ok(())
     }
 }

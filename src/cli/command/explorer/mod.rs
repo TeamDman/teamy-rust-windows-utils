@@ -6,6 +6,7 @@ use eyre::Result;
 use std::ffi::OsString;
 
 pub mod context_menu;
+pub mod show;
 
 #[derive(Args, Debug, Arbitrary, PartialEq)]
 pub struct ExplorerArgs {
@@ -28,6 +29,8 @@ impl ExplorerArgs {
 #[derive(Subcommand, Debug, Arbitrary, PartialEq)]
 pub enum ExplorerCommand {
     ContextMenu(context_menu::ContextMenuArgs),
+    /// Open Explorer and select the specified path(s)
+    Show(show::ShowArgs),
 }
 
 impl ToArgs for ExplorerCommand {
@@ -35,6 +38,11 @@ impl ToArgs for ExplorerCommand {
         match self {
             ExplorerCommand::ContextMenu(args) => {
                 let mut ret = vec!["context-menu".into()];
+                ret.extend(args.to_args());
+                ret
+            }
+            ExplorerCommand::Show(args) => {
+                let mut ret = vec!["show".into()];
                 ret.extend(args.to_args());
                 ret
             }
@@ -46,6 +54,7 @@ impl ExplorerCommand {
     pub fn invoke(self) -> Result<()> {
         match self {
             ExplorerCommand::ContextMenu(args) => args.invoke(),
+            ExplorerCommand::Show(args) => args.invoke(),
         }
     }
 }
