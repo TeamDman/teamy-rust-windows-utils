@@ -8,7 +8,7 @@ multiple_unsafe_ops_per_block = "deny"
 authors = ["TeamDman"]
 description = "A collection of my Rust utilities for interacting with Windows."
 repository = "https://github.com/TeamDman/teamy-rust-windows-utils.git"
-version = "0.8.0"
+version = "0.8.1"
 license = "MPL-2.0"
 edition = "2024"
 

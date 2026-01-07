@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "teamy-windows"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "arbitrary",
  "chrono",
@@ -2020,7 +2020,7 @@ dependencies = [
 
 [[package]]
 name = "tray-console-demo"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "bevy_log",
  "color-eyre",
@@ -2034,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "tray-demo"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "bevy_log",
  "color-eyre",
