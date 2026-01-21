@@ -93,6 +93,9 @@ cli = [
     "dep:arbitrary",
     "dep:tracing-subscriber",
     "dep:cloud_terrastodon_user_input",
+    "dep:eframe",
+    "dep:egui",
+    "dep:egui_tiles",
 ]
 tracing-subscriber = ["dep:tracing-subscriber"]
 arbitrary = ["dep:arbitrary"]
@@ -114,3 +117,6 @@ serde = { version = "1.0.228", features = ["derive"], optional = true }
 cloud_terrastodon_user_input = { version = "0.29.0", optional = true }
 dunce.workspace = true
 image.workspace = true
+eframe = { version = "0.30", optional = true }
+egui = { version = "0.30", optional = true }
+egui_tiles = { version = "0.11", optional = true }

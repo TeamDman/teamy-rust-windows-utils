@@ -6,6 +6,7 @@ use std::ffi::OsString;
 
 pub mod clipboard;
 pub mod explorer;
+pub mod icon;
 pub mod mic;
 pub mod window;
 
@@ -13,6 +14,7 @@ pub mod window;
 pub enum CliCommand {
     Clipboard(clipboard::ClipboardArgs),
     Explorer(explorer::ExplorerArgs),
+    Icon(icon::IconArgs),
     Mic(mic::MicArgs),
     Window(window::WindowArgs),
 }
@@ -27,6 +29,11 @@ impl ToArgs for CliCommand {
             }
             CliCommand::Explorer(args) => {
                 let mut ret = vec!["explorer".into()];
+                ret.extend(args.to_args());
+                ret
+            }
+            CliCommand::Icon(args) => {
+                let mut ret = vec!["icon".into()];
                 ret.extend(args.to_args());
                 ret
             }
@@ -49,6 +56,7 @@ impl CliCommand {
         match self {
             CliCommand::Clipboard(args) => args.invoke(),
             CliCommand::Explorer(args) => args.invoke(),
+            CliCommand::Icon(args) => args.invoke(),
             CliCommand::Mic(args) => args.invoke(),
             CliCommand::Window(args) => args.invoke(),
         }
