@@ -17,6 +17,7 @@ pub mod storage;
 pub mod string;
 pub mod tray;
 pub mod window;
+pub mod audio;
 
 // Re-export dunce for path normalization
 pub use dunce;
