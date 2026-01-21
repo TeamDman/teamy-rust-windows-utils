@@ -87,6 +87,7 @@ cli = [
     "dep:cloud_terrastodon_user_input",
 ]
 tracing-subscriber = ["dep:tracing-subscriber"]
+arbitrary = ["dep:arbitrary"]
 
 [dependencies]
 eyre.workspace = true

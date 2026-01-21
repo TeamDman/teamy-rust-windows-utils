@@ -20,7 +20,7 @@ impl<T: AsRef<Path>> IsAvailableOnDevice for T {
 
 #[cfg(test)]
 mod test {
-    use crate::file::IsAvailableOnDevice;
+    use crate::storage::IsAvailableOnDevice;
 
     #[test]
     fn it_works() -> eyre::Result<()> {
