@@ -1,9 +1,0 @@
-{
-	"rust-analyzer.cargo.features": [
-		"cli",
-        "serde"
-	],
-	"rust-analyzer.linkedProjects": [
-		"./Cargo.toml"
-	]
-}
