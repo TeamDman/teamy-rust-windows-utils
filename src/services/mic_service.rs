@@ -4,11 +4,9 @@
 //! audio data as ShmBytes for zero-copy transfer.
 
 use std::collections::HashMap;
-use std::io::Cursor;
 use std::sync::Arc;
 use std::time::Duration;
 
-use eyre::{Context as _, bail};
 use facet::Facet;
 use jiff::Timestamp;
 use parking_lot::Mutex;
@@ -305,13 +303,7 @@ impl MicrophoneService for MicrophoneServiceImpl {
             return DrainAudioResult::Err("No audio data recorded".to_string());
         }
 
-        // Convert to WAV
-        let wav_bytes = match create_wav_file(&audio_data, channels, sample_rate, bits_per_sample) {
-            Ok(bytes) => bytes,
-            Err(e) => return DrainAudioResult::Err(format!("Failed to create WAV: {e:#}")),
-        };
-
-        // Calculate duration
+        // Calculate duration before we move audio_data
         let bytes_per_sample = bits_per_sample as usize / 8;
         let bytes_per_frame = bytes_per_sample * channels as usize;
         let total_frames = if bytes_per_frame > 0 {
@@ -325,11 +317,31 @@ impl MicrophoneService for MicrophoneServiceImpl {
             0
         };
 
-        // Allocate ShmBytes and copy the WAV data
-        let shm_bytes = match ShmBytes::alloc(wav_bytes.len()) {
+        // Determine header size based on format
+        // >2 channels or >16 bits requires WAVEFORMATEXTENSIBLE (68 byte header)
+        // Otherwise use PCMWAVEFORMAT (44 byte header)
+        let header_size = if channels > 2 || bits_per_sample > 16 { 68 } else { 44 };
+        let wav_size = header_size + audio_data.len();
+
+        // Allocate ShmBytes and write WAV directly into it (no intermediate buffer!)
+        let shm_bytes = match ShmBytes::alloc(wav_size) {
             Ok(mut bytes) => {
-                if let Some(slice) = bytes.as_mut_slice() {
-                    slice.copy_from_slice(&wav_bytes);
+                match bytes.as_mut_slice() {
+                    Some(slice) => {
+                        // Write WAV header directly
+                        write_wav_header(
+                            &mut slice[..header_size],
+                            channels,
+                            sample_rate,
+                            bits_per_sample,
+                            audio_data.len() as u32,
+                        );
+                        // Copy raw audio data directly after header
+                        slice[header_size..].copy_from_slice(&audio_data);
+                    }
+                    None => {
+                        return DrainAudioResult::Err("Failed to access ShmBytes slice".to_string());
+                    }
                 }
                 bytes
             }
@@ -338,7 +350,7 @@ impl MicrophoneService for MicrophoneServiceImpl {
 
         tracing::info!(
             device_id,
-            wav_size = wav_bytes.len(),
+            wav_size,
             duration_ms,
             "Drained audio to WAV"
         );
@@ -508,45 +520,123 @@ fn run_recording_thread(
     })
 }
 
-/// Creates a WAV file from raw audio data.
-fn create_wav_file(
-    audio_data: &[u8],
-    n_channels: u16,
-    n_samples_per_sec: u32,
-    w_bits_per_sample: u16,
-) -> eyre::Result<Vec<u8>> {
-    let mut output = Cursor::new(Vec::new());
-
-    let spec = hound::WavSpec {
-        channels: n_channels,
-        sample_rate: n_samples_per_sec,
-        bits_per_sample: w_bits_per_sample,
-        sample_format: if w_bits_per_sample == 32 {
-            hound::SampleFormat::Float
-        } else {
-            hound::SampleFormat::Int
-        },
-    };
-
-    let mut writer = hound::WavWriter::new(&mut output, spec)
-        .wrap_err("Failed to create WAV writer")?;
-
-    match w_bits_per_sample {
-        16 => {
-            for chunk in audio_data.chunks_exact(2) {
-                let sample = i16::from_le_bytes([chunk[0], chunk[1]]);
-                writer.write_sample(sample).wrap_err("Failed to write sample")?;
-            }
-        }
-        32 => {
-            for chunk in audio_data.chunks_exact(4) {
-                let sample = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
-                writer.write_sample(sample).wrap_err("Failed to write sample")?;
-            }
-        }
-        bits => bail!("Unsupported bit depth: {bits}"),
+/// Writes a WAV header directly into a buffer.
+/// 
+/// For PCM data, the raw samples can be appended directly after the header.
+/// This avoids hound's overhead and allows writing directly to ShmBytes.
+fn write_wav_header(
+    buf: &mut [u8],
+    channels: u16,
+    sample_rate: u32,
+    bits_per_sample: u16,
+    data_size: u32,
+) {
+    let bytes_per_sample = (bits_per_sample + 7) / 8;
+    let block_align = bytes_per_sample as u16 * channels;
+    let byte_rate = sample_rate * block_align as u32;
+    
+    // Use WAVEFORMATEXTENSIBLE for >2 channels or >16 bits
+    let use_extensible = channels > 2 || bits_per_sample > 16;
+    
+    if use_extensible {
+        write_wav_header_extensible(buf, channels, sample_rate, bits_per_sample, bytes_per_sample, block_align, byte_rate, data_size);
+    } else {
+        write_wav_header_pcm(buf, channels, sample_rate, bits_per_sample, block_align, byte_rate, data_size);
     }
+}
 
-    writer.finalize().wrap_err("Failed to finalize WAV")?;
-    Ok(output.into_inner())
+/// Write PCMWAVEFORMAT header (44 bytes)
+fn write_wav_header_pcm(
+    buf: &mut [u8],
+    channels: u16,
+    sample_rate: u32,
+    bits_per_sample: u16,
+    block_align: u16,
+    byte_rate: u32,
+    data_size: u32,
+) {
+    let file_size = 36 + data_size; // Total - 8 bytes for RIFF header
+    
+    // RIFF header
+    buf[0..4].copy_from_slice(b"RIFF");
+    buf[4..8].copy_from_slice(&file_size.to_le_bytes());
+    buf[8..12].copy_from_slice(b"WAVE");
+    
+    // fmt chunk
+    buf[12..16].copy_from_slice(b"fmt ");
+    buf[16..20].copy_from_slice(&16u32.to_le_bytes()); // fmt chunk size
+    
+    // Format tag: 1 = PCM, 3 = IEEE float
+    let format_tag: u16 = if bits_per_sample == 32 { 3 } else { 1 };
+    buf[20..22].copy_from_slice(&format_tag.to_le_bytes());
+    buf[22..24].copy_from_slice(&channels.to_le_bytes());
+    buf[24..28].copy_from_slice(&sample_rate.to_le_bytes());
+    buf[28..32].copy_from_slice(&byte_rate.to_le_bytes());
+    buf[32..34].copy_from_slice(&block_align.to_le_bytes());
+    buf[34..36].copy_from_slice(&bits_per_sample.to_le_bytes());
+    
+    // data chunk
+    buf[36..40].copy_from_slice(b"data");
+    buf[40..44].copy_from_slice(&data_size.to_le_bytes());
+}
+
+/// Write WAVEFORMATEXTENSIBLE header (68 bytes)
+fn write_wav_header_extensible(
+    buf: &mut [u8],
+    channels: u16,
+    sample_rate: u32,
+    bits_per_sample: u16,
+    bytes_per_sample: u16,
+    block_align: u16,
+    byte_rate: u32,
+    data_size: u32,
+) {
+    let file_size = 60 + data_size; // Total - 8 bytes for RIFF header
+    
+    // RIFF header
+    buf[0..4].copy_from_slice(b"RIFF");
+    buf[4..8].copy_from_slice(&file_size.to_le_bytes());
+    buf[8..12].copy_from_slice(b"WAVE");
+    
+    // fmt chunk
+    buf[12..16].copy_from_slice(b"fmt ");
+    buf[16..20].copy_from_slice(&40u32.to_le_bytes()); // fmt chunk size for extensible
+    buf[20..22].copy_from_slice(&0xFFFEu16.to_le_bytes()); // WAVE_FORMAT_EXTENSIBLE
+    buf[22..24].copy_from_slice(&channels.to_le_bytes());
+    buf[24..28].copy_from_slice(&sample_rate.to_le_bytes());
+    buf[28..32].copy_from_slice(&byte_rate.to_le_bytes());
+    buf[32..34].copy_from_slice(&block_align.to_le_bytes());
+    buf[34..36].copy_from_slice(&(bytes_per_sample * 8).to_le_bytes()); // Container bits
+    buf[36..38].copy_from_slice(&22u16.to_le_bytes()); // cbSize
+    buf[38..40].copy_from_slice(&bits_per_sample.to_le_bytes()); // Valid bits
+    
+    // Channel mask (default assignment)
+    let channel_mask: u32 = match channels {
+        1 => 0x4,      // FRONT_CENTER
+        2 => 0x3,      // FRONT_LEFT | FRONT_RIGHT
+        3 => 0x7,      // + FRONT_CENTER
+        4 => 0x33,     // + BACK_LEFT | BACK_RIGHT
+        5 => 0x37,     // + FRONT_CENTER
+        6 => 0x3F,     // + LOW_FREQUENCY
+        7 => 0x13F,    // + BACK_CENTER
+        8 => 0x63F,    // + SIDE_LEFT | SIDE_RIGHT
+        _ => 0,
+    };
+    buf[40..44].copy_from_slice(&channel_mask.to_le_bytes());
+    
+    // SubFormat GUID
+    let subformat = if bits_per_sample == 32 {
+        // KSDATAFORMAT_SUBTYPE_IEEE_FLOAT
+        [0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+         0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71]
+    } else {
+        // KSDATAFORMAT_SUBTYPE_PCM
+        [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+         0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71]
+    };
+    buf[44..60].copy_from_slice(&subformat);
+    
+    // data chunk
+    buf[60..64].copy_from_slice(b"data");
+    buf[64..68].copy_from_slice(&data_size.to_le_bytes());
 }
