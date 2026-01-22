@@ -120,3 +120,7 @@ image.workspace = true
 eframe = { version = "0.30", optional = true }
 egui = { version = "0.30", optional = true }
 egui_tiles = { version = "0.11", optional = true }
+facet = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
+facet-pretty = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
+facet-json = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
+structstruck = "0.5.1"
