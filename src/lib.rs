@@ -12,6 +12,8 @@ pub mod job;
 pub mod log;
 pub mod module;
 pub mod network;
+pub mod paths;
+pub mod services;
 pub mod shell;
 pub mod storage;
 pub mod string;
