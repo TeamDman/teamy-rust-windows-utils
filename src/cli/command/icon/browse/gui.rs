@@ -320,7 +320,7 @@ fn get_icon_count(path: &PathBuf) -> Result<u32> {
 
 fn load_icon_from_dll_sized(path: &PathBuf, index: u32, size: u32) -> Result<image::RgbaImage> {
     let path_str = path.to_string_lossy();
-    
+
     // PrivateExtractIconsW requires a fixed-size buffer of 260 u16s
     let mut filename_buf: [u16; 260] = [0; 260];
     for (i, c) in path_str.encode_utf16().take(259).enumerate() {
@@ -344,7 +344,15 @@ fn load_icon_from_dll_sized(path: &PathBuf, index: u32, size: u32) -> Result<ima
     };
 
     if extracted == 0 || icons[0].is_invalid() {
-        eyre::bail!("Failed to extract icon at index {} with size {}", index, size);
+        // Fallback to ExtractIconExW for 32x32 icons
+        if size == 32 {
+            return load_icon_from_dll_extract(path, index);
+        }
+        eyre::bail!(
+            "Failed to extract icon at index {} with size {}",
+            index,
+            size
+        );
     }
 
     // The icon handle needs to be destroyed after use
@@ -353,6 +361,38 @@ fn load_icon_from_dll_sized(path: &PathBuf, index: u32, size: u32) -> Result<ima
     // Destroy the icon handle
     unsafe {
         _ = windows::Win32::UI::WindowsAndMessaging::DestroyIcon(icons[0]);
+    }
+
+    result
+}
+
+/// Fallback using ExtractIconExW which works better for some DLLs
+fn load_icon_from_dll_extract(path: &PathBuf, index: u32) -> Result<image::RgbaImage> {
+    let path_str = path.to_string_lossy();
+    let pcwstr = path_str.as_ref().easy_pcwstr()?;
+
+    let mut large_icon: HICON = HICON::default();
+
+    let extracted = unsafe {
+        ExtractIconExW(
+            pcwstr.as_ref(),
+            index as i32,
+            Some(&mut large_icon),
+            None,
+            1,
+        )
+    };
+
+    if extracted == 0 || large_icon.is_invalid() {
+        eyre::bail!("Failed to extract icon at index {} using ExtractIconExW", index);
+    }
+
+    // The icon handle needs to be destroyed after use
+    let result = unsafe { hicon_to_rgba(large_icon) };
+
+    // Destroy the icon handle
+    unsafe {
+        _ = windows::Win32::UI::WindowsAndMessaging::DestroyIcon(large_icon);
     }
 
     result

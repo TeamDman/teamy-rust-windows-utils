@@ -20,7 +20,19 @@ impl IconBrowseArgs {
         let paths = if self.paths.is_empty() {
             let system_root =
                 std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
-            vec![PathBuf::from(format!("{system_root}\\system32\\mmres.dll"))]
+            let system32 = format!("{system_root}\\system32");
+            vec![
+                PathBuf::from(format!("{system32}\\mmres.dll")),        // Audio/multimedia icons
+                PathBuf::from(format!("{system32}\\shell32.dll")),      // Shell icons (folders, files, etc)
+                PathBuf::from(format!("{system32}\\imageres.dll")),     // Modern Windows icons
+                PathBuf::from(format!("{system32}\\ddores.dll")),       // Device icons
+                PathBuf::from(format!("{system32}\\netshell.dll")),     // Network icons
+                PathBuf::from(format!("{system32}\\wmploc.dll")),       // Windows Media Player icons
+                PathBuf::from(format!("{system32}\\pnidui.dll")),       // Network status icons
+                PathBuf::from(format!("{system32}\\dsuiext.dll")),      // Directory service icons
+                PathBuf::from(format!("{system32}\\ieframe.dll")),      // Internet Explorer icons
+                PathBuf::from(format!("{system32}\\compstui.dll")),     // Printer icons
+            ]
         } else {
             self.paths
         };

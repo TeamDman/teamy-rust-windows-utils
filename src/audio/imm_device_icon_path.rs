@@ -39,6 +39,7 @@ impl TeamyImmDeviceIconPath {
 impl Default for TeamyImmDeviceIconPath {
     fn default() -> Self {
         Self(format!(
+            // "{system_root}\\system32\\mmres.dll,-3014",
             "{system_root}\\system32\\mmres.dll,-3012",
             system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string())
         ))
