@@ -10,6 +10,7 @@ use std::str::FromStr;
 /// - "CD" -> C and D
 /// - "C,D;E F" -> C, D, E, F (separators: space/comma/semicolon)
 #[derive(Clone, PartialEq, Eq, Debug, Facet)]
+#[facet(transparent)]
 pub struct DriveLetterPattern(pub String);
 impl Default for DriveLetterPattern {
     fn default() -> Self {
