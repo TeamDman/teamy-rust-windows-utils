@@ -1,9 +1,11 @@
 use crate::hicon::hicon_to_rgba;
 use crate::string::EasyPCWSTR;
 use eframe::egui;
-use egui_tiles::{TileId, Tiles};
+use egui_tiles::TileId;
+use egui_tiles::Tiles;
 use eyre::Result;
 use std::collections::HashMap;
+use std::path::Path;
 use std::path::PathBuf;
 use windows::Win32::UI::Shell::ExtractIconExW;
 use windows::Win32::UI::WindowsAndMessaging::HICON;
@@ -55,7 +57,7 @@ struct TreeBehavior {
     dll_entries: Vec<DllEntry>,
     selected_icon: Option<IconEntry>,
     textures: HashMap<IconCacheKey, Option<LoadedIconInfo>>, // None means failed to load
-    texture_handles: Vec<egui::TextureHandle>, // Keep handles alive
+    texture_handles: Vec<egui::TextureHandle>,               // Keep handles alive
 }
 
 impl TreeBehavior {
@@ -89,11 +91,11 @@ impl TreeBehavior {
     fn load_icon_texture(
         &mut self,
         ctx: &egui::Context,
-        dll_path: &PathBuf,
+        dll_path: &Path,
         index: u32,
         size: u32,
     ) -> Option<LoadedIconInfo> {
-        let key = (dll_path.clone(), index, size);
+        let key = (dll_path.to_path_buf(), index, size);
         if let Some(info) = self.textures.get(&key) {
             return info.clone();
         }
@@ -129,7 +131,7 @@ impl TreeBehavior {
     fn load_icon_texture_default(
         &mut self,
         ctx: &egui::Context,
-        dll_path: &PathBuf,
+        dll_path: &Path,
         index: u32,
     ) -> Option<LoadedIconInfo> {
         self.load_icon_texture(ctx, dll_path, index, 32)
@@ -189,8 +191,11 @@ impl TreeBehavior {
                     .show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
                             for icon in &dll_entry.icons {
-                                let loaded_info =
-                                    self.load_icon_texture_default(ui.ctx(), &icon.dll_path, icon.index);
+                                let loaded_info = self.load_icon_texture_default(
+                                    ui.ctx(),
+                                    &icon.dll_path,
+                                    icon.index,
+                                );
 
                                 let response = if let Some(ref info) = loaded_info {
                                     ui.add(
@@ -242,18 +247,29 @@ impl TreeBehavior {
                     ui.separator();
                     ui.heading("Available Sizes");
                     ui.label("Each size is extracted separately from the icon resource:");
-                    
+
                     // Try to load at different sizes
                     let sizes = [16, 24, 32, 48, 64, 96, 128, 256];
-                    
+
                     ui.horizontal_wrapped(|ui| {
                         for &size in &sizes {
                             ui.vertical(|ui| {
                                 ui.label(format!("{}x{}", size, size));
-                                if let Some(info) = self.load_icon_texture(ui.ctx(), &icon.dll_path, icon.index, size) {
-                                    ui.image((info.texture_id, egui::vec2(size as f32, size as f32)));
+                                if let Some(info) = self.load_icon_texture(
+                                    ui.ctx(),
+                                    &icon.dll_path,
+                                    icon.index,
+                                    size,
+                                ) {
+                                    ui.image((
+                                        info.texture_id,
+                                        egui::vec2(size as f32, size as f32),
+                                    ));
                                     if info.width != size || info.height != size {
-                                        ui.small(format!("(actual: {}x{})", info.width, info.height));
+                                        ui.small(format!(
+                                            "(actual: {}x{})",
+                                            info.width, info.height
+                                        ));
                                     }
                                 } else {
                                     ui.label("N/A");
@@ -308,7 +324,7 @@ impl eframe::App for IconBrowserApp {
     }
 }
 
-fn get_icon_count(path: &PathBuf) -> Result<u32> {
+fn get_icon_count(path: &Path) -> Result<u32> {
     let path_str = path.to_string_lossy();
     let pcwstr = path_str.as_ref().easy_pcwstr()?;
 
@@ -318,7 +334,7 @@ fn get_icon_count(path: &PathBuf) -> Result<u32> {
     Ok(count)
 }
 
-fn load_icon_from_dll_sized(path: &PathBuf, index: u32, size: u32) -> Result<image::RgbaImage> {
+fn load_icon_from_dll_sized(path: &Path, index: u32, size: u32) -> Result<image::RgbaImage> {
     let path_str = path.to_string_lossy();
 
     // PrivateExtractIconsW requires a fixed-size buffer of 260 u16s
@@ -367,7 +383,7 @@ fn load_icon_from_dll_sized(path: &PathBuf, index: u32, size: u32) -> Result<ima
 }
 
 /// Fallback using ExtractIconExW which works better for some DLLs
-fn load_icon_from_dll_extract(path: &PathBuf, index: u32) -> Result<image::RgbaImage> {
+fn load_icon_from_dll_extract(path: &Path, index: u32) -> Result<image::RgbaImage> {
     let path_str = path.to_string_lossy();
     let pcwstr = path_str.as_ref().easy_pcwstr()?;
 
@@ -384,7 +400,10 @@ fn load_icon_from_dll_extract(path: &PathBuf, index: u32) -> Result<image::RgbaI
     };
 
     if extracted == 0 || large_icon.is_invalid() {
-        eyre::bail!("Failed to extract icon at index {} using ExtractIconExW", index);
+        eyre::bail!(
+            "Failed to extract icon at index {} using ExtractIconExW",
+            index
+        );
     }
 
     // The icon handle needs to be destroyed after use

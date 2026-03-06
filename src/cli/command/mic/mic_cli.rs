@@ -1,6 +1,6 @@
-use crate::cli::to_args::ToArgs;
 use crate::cli::command::mic::list::MicListArgs;
-use crate::cli::command::mic::record::MicRecordArgs;
+// use crate::cli::command::mic::record::MicRecordArgs;
+use crate::cli::to_args::ToArgs;
 use arbitrary::Arbitrary;
 use clap::Args;
 use clap::Subcommand;
@@ -17,14 +17,14 @@ pub struct MicArgs {
 #[derive(Subcommand, Debug, Arbitrary, PartialEq)]
 pub enum MicCommand {
     List(MicListArgs),
-    Record(MicRecordArgs),
+    // Record(MicRecordArgs),
 }
 
 impl MicArgs {
     pub fn invoke(self) -> Result<()> {
         match self.command {
             MicCommand::List(args) => args.invoke(),
-            MicCommand::Record(args) => args.invoke(),
+            // MicCommand::Record(args) => args.invoke(),
         }
     }
 }
@@ -36,11 +36,10 @@ impl ToArgs for MicArgs {
             MicCommand::List(list_args) => {
                 args.push("list".into());
                 args.extend(list_args.to_args());
-            }
-            MicCommand::Record(record_args) => {
-                args.push("record".into());
-                args.extend(record_args.to_args());
-            }
+            } // MicCommand::Record(record_args) => {
+              //     args.push("record".into());
+              //     args.extend(record_args.to_args());
+              // }
         }
         args
     }

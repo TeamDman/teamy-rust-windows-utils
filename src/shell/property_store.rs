@@ -11,6 +11,7 @@ impl PropVariantExt for PROPVARIANT {
         let VT_LPWSTR = varenum else {
             bail!("PROPVARIANT is not of type VT_LPWSTR, was {varenum:?} instead",);
         };
+        #[expect(clippy::multiple_unsafe_ops_per_block)]
         let pwstr = unsafe { self.Anonymous.Anonymous.Anonymous.pwszVal };
         if pwstr.is_null() {
             bail!("PROPVARIANT contains null pointer for string value");

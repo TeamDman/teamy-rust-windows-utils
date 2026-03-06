@@ -8,7 +8,7 @@ multiple_unsafe_ops_per_block = "deny"
 authors = ["TeamDman"]
 description = "A collection of my Rust utilities for interacting with Windows."
 repository = "https://github.com/TeamDman/teamy-rust-windows-utils.git"
-version = "0.10.0"
+version = "0.11.0"
 license = "MPL-2.0"
 edition = "2024"
 
@@ -24,6 +24,9 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }
 widestring = "1.2.0"
 chrono = "0.4"
 arbitrary = { version = "1.4.1", features = ["derive"] }
+facet = "0.44.1"
+facet-json = "0.44.1"
+facet-pretty = "0.44.1"
 windows = { version = "0.62.2", features = [
     "Win32_Devices_Properties",
     "Win32_Foundation",
@@ -120,14 +123,17 @@ image.workspace = true
 eframe = { version = "0.30", optional = true }
 egui = { version = "0.30", optional = true }
 egui_tiles = { version = "0.11", optional = true }
-facet = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
-facet-pretty = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
-facet-json = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
+facet.workspace = true
+
+# some o dese were from the roam experiment
+# facet = { version = "0.42.0", git = "https://github.com/facet-rs/facet", branch = "main" }
+facet-pretty.workspace = true
+facet-json.workspace = true
 structstruck = "0.5.1"
 hound = "3.5"
-humantime = "2.1"
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
+# humantime = "2.1"
+# tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
 directories-next = "2.0"
-tempfile = "3"
-jiff = "0.2"
-parking_lot = "0.12"
+# tempfile = "3"
+# jiff = "0.2"
+# parking_lot = "0.12"

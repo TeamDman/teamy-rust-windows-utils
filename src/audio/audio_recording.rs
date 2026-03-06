@@ -4,17 +4,23 @@
 //! device using the low-level WASAPI interface.
 
 use crate::com::com_guard::ComGuard;
-use eyre::{Context, Result, bail};
+use eyre::Context;
+use eyre::Result;
+use eyre::bail;
 use std::io::Cursor;
 use std::ptr;
 use std::slice;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use std::time::Instant;
 use widestring::U16CString;
-use windows::Win32::Media::Audio::{
-    AUDCLNT_SHAREMODE_SHARED, IAudioCaptureClient, IAudioClient,
-    IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator,
-};
-use windows::Win32::System::Com::{CLSCTX_ALL, CoCreateInstance};
+use windows::Win32::Media::Audio::AUDCLNT_SHAREMODE_SHARED;
+use windows::Win32::Media::Audio::IAudioCaptureClient;
+use windows::Win32::Media::Audio::IAudioClient;
+use windows::Win32::Media::Audio::IMMDevice;
+use windows::Win32::Media::Audio::IMMDeviceEnumerator;
+use windows::Win32::Media::Audio::MMDeviceEnumerator;
+use windows::Win32::System::Com::CLSCTX_ALL;
+use windows::Win32::System::Com::CoCreateInstance;
 use windows::core::PCWSTR;
 
 /// Records audio from a specific device for the given duration.
@@ -27,18 +33,23 @@ pub fn record_audio(device_id: &str, duration_ms: u64) -> Result<Vec<u8>> {
     let device = get_device_by_id(device_id)?;
 
     // Activate the audio client
-    let audio_client: IAudioClient = unsafe { device.Activate(CLSCTX_ALL, None) }
-        .wrap_err("Failed to activate audio client")?;
+    let audio_client: IAudioClient =
+        unsafe { device.Activate(CLSCTX_ALL, None) }.wrap_err("Failed to activate audio client")?;
 
     // Get the mix format (the format the device will capture in)
-    let mix_format_ptr = unsafe { audio_client.GetMixFormat() }
-        .wrap_err("Failed to get mix format")?;
+    let mix_format_ptr =
+        unsafe { audio_client.GetMixFormat() }.wrap_err("Failed to get mix format")?;
 
     // SAFETY: GetMixFormat returns a valid pointer that we must free with CoTaskMemFree
     // Copy the fields we need to avoid unaligned reference issues (WAVEFORMATEX is packed)
     let (n_channels, n_samples_per_sec, n_block_align, w_bits_per_sample) = unsafe {
         let fmt = &*mix_format_ptr;
-        (fmt.nChannels, fmt.nSamplesPerSec, fmt.nBlockAlign, fmt.wBitsPerSample)
+        (
+            fmt.nChannels,
+            fmt.nSamplesPerSec,
+            fmt.nBlockAlign,
+            fmt.wBitsPerSample,
+        )
     };
 
     // Initialize the audio client for capture
@@ -58,8 +69,8 @@ pub fn record_audio(device_id: &str, duration_ms: u64) -> Result<Vec<u8>> {
     .wrap_err("Failed to initialize audio client")?;
 
     // Get the capture client interface
-    let capture_client: IAudioCaptureClient = unsafe { audio_client.GetService() }
-        .wrap_err("Failed to get capture client")?;
+    let capture_client: IAudioCaptureClient =
+        unsafe { audio_client.GetService() }.wrap_err("Failed to get capture client")?;
 
     // Get the buffer size
     let buffer_frame_count =
@@ -121,7 +132,7 @@ pub fn record_audio(device_id: &str, duration_ms: u64) -> Result<Vec<u8>> {
             const AUDCLNT_BUFFERFLAGS_SILENT: u32 = 0x2;
             if flags & AUDCLNT_BUFFERFLAGS_SILENT != 0 {
                 // Device is reporting silence, write zeros
-                audio_data.extend(std::iter::repeat(0u8).take(data_size));
+                audio_data.extend(std::iter::repeat_n(0u8, data_size));
             } else {
                 audio_data.extend_from_slice(captured_data);
             }
@@ -147,7 +158,12 @@ pub fn record_audio(device_id: &str, duration_ms: u64) -> Result<Vec<u8>> {
     );
 
     // Convert to WAV format
-    let wav_bytes = create_wav_file(&audio_data, n_channels, n_samples_per_sec, w_bits_per_sample)?;
+    let wav_bytes = create_wav_file(
+        &audio_data,
+        n_channels,
+        n_samples_per_sec,
+        w_bits_per_sample,
+    )?;
 
     Ok(wav_bytes)
 }

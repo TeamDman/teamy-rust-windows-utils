@@ -1,4 +1,5 @@
 use eyre::ensure;
+use facet::Facet;
 use std::fmt;
 use std::str::FromStr;
 
@@ -8,7 +9,7 @@ use std::str::FromStr;
 /// - "C" -> just C
 /// - "CD" -> C and D
 /// - "C,D;E F" -> C, D, E, F (separators: space/comma/semicolon)
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Facet)]
 pub struct DriveLetterPattern(pub String);
 impl Default for DriveLetterPattern {
     fn default() -> Self {

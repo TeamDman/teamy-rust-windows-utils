@@ -1,4 +1,3 @@
-
 use image::RgbaImage;
 use std::ops::Deref;
 pub struct TeamyImmDeviceIcon(pub RgbaImage);
