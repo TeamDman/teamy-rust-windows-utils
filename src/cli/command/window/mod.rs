@@ -7,6 +7,7 @@ use std::ffi::OsString;
 
 pub mod focus;
 pub mod list;
+pub mod open;
 pub mod pick;
 
 #[derive(Args, Debug, Arbitrary, PartialEq)]
@@ -31,6 +32,7 @@ impl WindowArgs {
 pub enum WindowCommand {
     List(list::WindowListArgs),
     Focus(focus::WindowFocusArgs),
+    Open(open::WindowOpenArgs),
     Pick(pick::WindowPickArgs),
 }
 
@@ -44,6 +46,11 @@ impl ToArgs for WindowCommand {
             }
             WindowCommand::Focus(args) => {
                 let mut ret = vec!["focus".into()];
+                ret.extend(args.to_args());
+                ret
+            }
+            WindowCommand::Open(args) => {
+                let mut ret = vec!["open".into()];
                 ret.extend(args.to_args());
                 ret
             }
@@ -61,6 +68,7 @@ impl WindowCommand {
         match self {
             WindowCommand::List(args) => args.invoke(),
             WindowCommand::Focus(args) => args.invoke(),
+            WindowCommand::Open(args) => args.invoke(),
             WindowCommand::Pick(args) => args.invoke(),
         }
     }

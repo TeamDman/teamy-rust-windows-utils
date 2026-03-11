@@ -5,6 +5,7 @@ use eyre::Result;
 use std::ffi::OsString;
 
 pub mod clipboard;
+pub mod daemon;
 pub mod explorer;
 pub mod icon;
 pub mod mic;
@@ -13,6 +14,7 @@ pub mod window;
 #[derive(Subcommand, Debug, Arbitrary, PartialEq)]
 pub enum CliCommand {
     Clipboard(clipboard::ClipboardArgs),
+    Daemon(daemon::DaemonArgs),
     Explorer(explorer::ExplorerArgs),
     Icon(icon::IconArgs),
     Mic(mic::MicArgs),
@@ -24,6 +26,11 @@ impl ToArgs for CliCommand {
         match self {
             CliCommand::Clipboard(args) => {
                 let mut ret = vec!["clipboard".into()];
+                ret.extend(args.to_args());
+                ret
+            }
+            CliCommand::Daemon(args) => {
+                let mut ret = vec!["daemon".into()];
                 ret.extend(args.to_args());
                 ret
             }
@@ -55,6 +62,7 @@ impl CliCommand {
     pub fn invoke(self) -> Result<()> {
         match self {
             CliCommand::Clipboard(args) => args.invoke(),
+            CliCommand::Daemon(args) => args.invoke(),
             CliCommand::Explorer(args) => args.invoke(),
             CliCommand::Icon(args) => args.invoke(),
             CliCommand::Mic(args) => args.invoke(),

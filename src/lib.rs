@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod daemon;
 #[cfg(feature = "cli")]
 pub mod cli;
 pub mod clipboard;
